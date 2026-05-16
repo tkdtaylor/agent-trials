@@ -22,8 +22,7 @@ class ToolUseAgent:
     def process_request(self, user_input: str) -> AgentResponse:
         specs = self._decide_tools(user_input)
         self.tool_calls = [
-            {"tool": s["tool"], "args": s["args"], "result": self._execute_tool(s["tool"], s["args"])}
-            for s in specs
+            {"tool": s["tool"], "args": s["args"], "result": self._execute_tool(s["tool"], s["args"])} for s in specs
         ]
         answer = self._generate(user_input, self.tool_calls)
         return AgentResponse(text=answer)
