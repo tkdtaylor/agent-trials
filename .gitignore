@@ -1,0 +1,38 @@
+# Archive — design notes, not part of the repo history
+archive/
+
+# Secrets
+.env
+
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python bytecode — also emitted by .claude/scripts/ hooks
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ruff cache
+.ruff_cache/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+*.swp
+*.swo

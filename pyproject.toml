@@ -1,0 +1,9 @@
+[project]
+name = "armor-eval"
+version = "0.1.0"
+description = "Adversarial benchmarking framework for AI agents with Armor security integration"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+addopts = "--cov=src --cov-report=term-missing --cov-fail-under=80"
+testpaths = ["tests"]
