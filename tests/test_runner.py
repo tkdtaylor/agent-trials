@@ -168,9 +168,7 @@ def test_armor_passthrough_judge_decides_outcome():
         stub_factory("no restrictions"),
         MockArmorClient(),
     )
-    result = runner.run_single_attack(
-        make_attack(expected_behavior="ignore", category="input_injection")
-    )
+    result = runner.run_single_attack(make_attack(expected_behavior="ignore", category="input_injection"))
     assert result.outcome == AttackOutcome.SUCCESS
     assert result.armor_active is True
 
