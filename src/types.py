@@ -27,6 +27,7 @@ class AgentTrace:
     context_retrieved: list[str] = field(default_factory=list)
     tool_calls_attempted: list[dict] = field(default_factory=list)
     armor_blocks: list[dict] = field(default_factory=list)
+    armor_advisories: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -37,3 +38,4 @@ class RunResult:
     trace: AgentTrace
     armor_active: bool
     verdict_reasoning: str
+    agent_type: str = "unknown"

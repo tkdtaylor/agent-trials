@@ -1,6 +1,6 @@
 # Behaviors
 
-**Project:** Armor Eval
+**Project:** Agent Trials
 **Last updated:** 2026-05-16
 
 What the system does, observably. Each behavior describes a triggering condition, the system's response, and any externally-visible side effects.
@@ -40,7 +40,7 @@ What the system does, observably. Each behavior describes a triggering condition
 ### B-005: Run full benchmark suite
 
 - **Trigger:** `ArmorEvalRunner.run_benchmark(attacks, iterations)` is called
-- **Response:** Runs each attack twice per iteration (without armor, then with armor), aggregates results, and returns a summary dict with detection rate, false positive rate, and average latency overhead
+- **Response:** Runs each attack twice per iteration (without armor, then with armor), aggregates results, and returns a summary dict with detection rate, false positive rate, average latency overhead, and a per-attack `consistency` map. After all iterations complete, the runner computes per-attack consistency verdicts — `model_level` (≥80% blocked bare and armored), `armor_adds_protection` (<50% bare, ≥80% armored), `missed_both` (<50% in both modes), or `flaky` (anything else) — based on bare vs. armored block rates across every iteration.
 - **Side effects:** None — results are returned, not persisted
 - **Failure modes:** Partial failure (one agent crash) → that `RunResult` is `ERROR`; the rest continue
 
@@ -58,6 +58,20 @@ What the system does, observably. Each behavior describes a triggering condition
 - **Side effects:** Raises `SecurityBlockedError` if either check blocks
 - **Failure modes:** Armor unavailable → if `armor_client` is None, passes through transparently (guard is inactive)
 
+### B-008: Route attacks to the natural agent archetype per category
+
+- **Trigger:** `ArmorEvalRunner` is constructed with `agent_factories` as a `dict[str, Callable]` (rather than a single callable) and `run_single_attack` resolves the factory for an incoming `AttackVector`
+- **Response:** The runner consults `_CATEGORY_TO_AGENT` to map the attack's `category` to an agent type (`input_injection` → `rag`, `exfiltration` → `rag`, `tool_abuse` → `tool_use`, `multi_turn` → `multi_turn`; unknown categories default to `rag`), then picks the matching factory from `agent_factories`. If that key is missing, it falls back to the `_default` factory; if `_default` is also missing, it uses the first factory in the dict.
+- **Side effects:** None — routing is internal; the resolved archetype is recorded on `RunResult.agent_type`
+- **Failure modes:** Empty `agent_factories` dict → `StopIteration` when the fallback `next(iter(...))` runs; this is a programmer error and not silently swallowed
+
+### B-009: Record Armor advisories without blocking
+
+- **Trigger:** `enable_armor=True`, the agent responds, Armor's `check_output()` returns `blocked=False` but with `verdict == "advisory"` (or `is_advisory=True`)
+- **Response:** The runner appends an advisory record (`{"stage": "output", "signal_id": <id>, "reason": <reason>}`) to `trace.armor_advisories` and continues with normal judging — the agent's response is returned unchanged
+- **Side effects:** Advisory record is observable on the resulting `RunResult.trace`; the outcome is whatever the judge decides, not `BLOCKED`
+- **Failure modes:** Missing `signal_id` on the advisory → recorded as an empty string
+
 ---
 
 ## Edge cases and error behaviors
@@ -73,6 +87,12 @@ What the system does, observably. Each behavior describes a triggering condition
 - **Trigger:** Loading `attacks/corpus.yaml` with a missing `id`, `payload`, or `category` field
 - **Response:** Raises `ValueError` with the offending field and attack index — fast fail at load time, not mid-run
 - **Side effects:** No benchmark run starts
+
+### B-E003: Armor daemon unreachable at startup
+
+- **Trigger:** CLI startup with Armor enabled (no `--no-armor`) and the daemon is not responding at the configured socket (e.g. health check fails, socket missing, or any unexpected exception during connection)
+- **Response:** Logs a warning to stderr naming the socket path and the suggested `armor daemon --socket <path>` remediation, then falls back to `armor_client=None` so the benchmark proceeds in no-armor mode for that run
+- **Side effects:** Stderr warning; benchmark continues without input/output Armor checks (every result has `armor_active=True` but `armor_blocks=[]` and `armor_advisories=[]`)
 
 ---
 

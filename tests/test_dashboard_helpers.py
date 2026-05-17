@@ -62,7 +62,7 @@ def test_load_results_has_total_attacks_key():
 def test_load_results_raises_on_missing_file():
     # TC-015-03
     with pytest.raises(FileNotFoundError):
-        load_results("/tmp/does_not_exist_armor_eval.json")
+        load_results("/tmp/does_not_exist_agent_trials.json")
 
 
 # --- format_outcome_table ---

@@ -1,6 +1,6 @@
-# Armor Eval
+# Agent Trials
 
-A Python framework for adversarially benchmarking AI agents before deployment, with Armor wired in as the optional defense layer. Runs attack vectors against pluggable agent archetypes (RAG, tool-use, multi-turn) with/without Armor active and generates a report card showing detection rates, latency overhead, and per-attack traces.
+A Python framework for running adversarial trials against AI agents before deployment, with Armor wired in as the optional defense layer. Runs attack vectors against pluggable agent archetypes (RAG, tool-use, multi-turn) with/without Armor active and generates a report card showing detection rates, latency overhead, and per-attack traces.
 
 ## Project structure
 
@@ -196,7 +196,7 @@ When dispatching parallel agents in one message, run `scripts/verify-worktree-is
 ### Skills
 - **code-scanner** — scan before installing new packages or before shipping. Trigger: "scan this for vulnerabilities" or "is this safe to install?"
 - **simplify** — review changed code after heavy implementation sprints. Trigger: "simplify this module"
-- **claude-api** — if/when integrating the Anthropic SDK directly into agent implementations or the judge. Trigger: code imports `anthropic`
+- **claude-api** — if a new backend wraps the Anthropic SDK behind `BackendProtocol`. Trigger: code imports `anthropic`
 - **security-review** — run a full security review of the attack surface and Armor integration before any public demo. Trigger: "security review"
 
 ### Hooks

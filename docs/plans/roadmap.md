@@ -1,7 +1,7 @@
 # Roadmap
 
-**Project:** Armor Eval
-**Last updated:** 2026-05-16
+**Project:** Agent Trials
+**Last updated:** 2026-05-18
 
 ## Active milestones
 
@@ -9,7 +9,7 @@
 
 - [ ] CI pipeline (GitHub Actions)
 - [ ] README demo GIF or screenshot
-- [ ] Full attack corpus expansion (currently 4 vectors; target ≥20 across all four threat classes)
+- [x] Full attack corpus expansion (39 vectors across 4 threat classes)
 
 ---
 
@@ -26,6 +26,13 @@ Candidate backlog items (not yet tasked):
 ---
 
 ## Completed milestones
+
+### v0.5 — Armor integration + per-agent routing ✅ (2026-05-18)
+
+- [x] Extended attack corpus to 39 vectors across 4 threat classes — task 018
+- [x] Armor v0.10.x daemon integration with canary honeypot seeding — task 019
+- [x] `armor canary seed` one-step workflow — task 020
+- [x] Per-agent routing: `--agent all` flag, `_CATEGORY_TO_AGENT` dispatch, `RunResult.agent_type` field, dict-of-factories constructor on `ArmorEvalRunner` — task 021
 
 ### v0.1 — Harness foundation ✅ (2026-05-16)
 

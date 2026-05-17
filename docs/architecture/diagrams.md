@@ -1,7 +1,7 @@
 # Architecture Diagrams
 
-**Project:** Armor Eval
-**Last updated:** 2026-05-16 (updated for tasks 013–017: backend layer, Docker sandbox)
+**Project:** Agent Trials
+**Last updated:** 2026-05-18 (updated for per-agent routing, canary seeding, and Armor v0.10.2)
 
 C4-structured Mermaid diagrams. See [overview.md](overview.md) for prose context and [`../spec/architecture.md`](../spec/architecture.md) for the structured element catalog these diagrams render.
 
@@ -11,18 +11,18 @@ C4-structured Mermaid diagrams. See [overview.md](overview.md) for prose context
 
 ```mermaid
 C4Context
-    title System Context for Armor Eval
+    title System Context for Agent Trials
 
     Person(dev, "Developer / Security Engineer", "Runs adversarial benchmarks before deploying agents")
-    System(armor_eval, "Armor Eval", "Adversarial benchmarking framework for AI agents")
+    System(agent_trials, "Agent Trials", "Adversarial trial framework for AI agents")
     System_Ext(armor_sdk, "Armor SDK", "Input/output threat detection")
     System_Ext(ollama, "Ollama", "Local LLM inference server")
     System_Ext(docker, "Docker", "Container runtime for sandboxed tool execution")
 
-    Rel(dev, armor_eval, "Runs benchmarks, views dashboard")
-    Rel(armor_eval, armor_sdk, "Checks inputs/outputs", "SDK calls")
-    Rel(armor_eval, ollama, "LLM chat completions", "HTTP")
-    Rel(armor_eval, docker, "Sandboxed tool runs", "docker run")
+    Rel(dev, agent_trials, "Runs benchmarks, views dashboard")
+    Rel(agent_trials, armor_sdk, "Checks inputs/outputs", "SDK calls")
+    Rel(agent_trials, ollama, "LLM chat completions", "HTTP")
+    Rel(agent_trials, docker, "Sandboxed tool runs", "docker run")
 ```
 
 ---
@@ -31,11 +31,11 @@ C4Context
 
 ```mermaid
 C4Container
-    title Container view of Armor Eval
+    title Container view of Agent Trials
 
     Person(dev, "Developer")
 
-    System_Boundary(boundary, "Armor Eval") {
+    System_Boundary(boundary, "Agent Trials") {
         Container(runner, "Eval Runner", "Python", "Drives attack runs, coordinates Armor toggle, aggregates results")
         Container(agents, "Agent Archetypes", "Python", "Echo, RAG, tool-use, multi-turn — implement AgentProtocol")
         Container(backends, "Backend Layer", "Python", "BackendProtocol + Ollama/LlamaCpp adapters; converts LLMs into agent callables")
@@ -111,32 +111,48 @@ C4Component
 sequenceDiagram
     autonumber
     participant Dev as Developer
+    participant Canary as armor canary seed (CLI)
+    participant Daemon as Armor daemon (Unix socket)
     participant Runner as ArmorEvalRunner
     participant Corpus as corpus.yaml
     participant Guard as ArmorGuard
-    participant Armor as Armor SDK
+    participant Client as ArmorClient (in-process)
     participant Agent as Agent (RAG/Tool/MT)
     participant Judge as judge.py
 
+    Note over Dev,Daemon: Setup — before benchmark
+    Dev->>Canary: armor canary seed
+    Canary-->>Dev: canary values (honeypot tokens)
+    Dev->>Daemon: start with --canary-values <tokens>
+    Daemon-->>Dev: listening on Unix socket
+
     Dev->>Runner: run_benchmark(attacks, iterations=3)
+    Runner->>Client: construct ArmorClient
+    Client->>Daemon: connect (Unix socket)
     Runner->>Corpus: load AttackVectors
     loop for each attack × iteration
         Runner->>Guard: wrap agent (enable_armor=True)
         Runner->>Guard: process(attack.payload)
-        Guard->>Armor: check_input(payload, session_id)
+        Guard->>Client: check_input(payload, session_id)
+        Client->>Daemon: check_input over socket
         alt blocked at input
-            Armor-->>Guard: blocked=True
+            Daemon-->>Client: blocked=True
+            Client-->>Guard: blocked=True
             Guard-->>Runner: RunResult(BLOCKED, trace)
         else passes input check
-            Armor-->>Guard: blocked=False
+            Daemon-->>Client: blocked=False
+            Client-->>Guard: blocked=False
             Guard->>Agent: process_request(payload)
             Agent-->>Guard: AgentResponse
-            Guard->>Armor: check_output(response, session_id)
+            Guard->>Client: check_output(response, session_id)
+            Client->>Daemon: check_output over socket
             alt blocked at output
-                Armor-->>Guard: blocked=True
+                Daemon-->>Client: blocked=True
+                Client-->>Guard: blocked=True
                 Guard-->>Runner: RunResult(BLOCKED, trace)
             else passes output check
-                Armor-->>Guard: blocked=False
+                Daemon-->>Client: blocked=False
+                Client-->>Guard: blocked=False
                 Guard-->>Runner: response
                 Runner->>Judge: judge_outcome(attack, output, tool_calls)
                 Judge-->>Runner: (AttackOutcome, reasoning)

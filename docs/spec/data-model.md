@@ -1,6 +1,6 @@
 # Data Model
 
-**Project:** Armor Eval
+**Project:** Agent Trials
 **Last updated:** 2026-05-16
 
 What data exists, how it's structured, where it lives, and what relationships hold between entities.
@@ -67,6 +67,7 @@ class AgentTrace:
     tool_calls_attempted: list[dict]  # tool-use agent: call records
     final_output: str
     armor_blocks: list[dict]          # Armor block records (empty if not blocked)
+    armor_advisories: list[dict]      # Armor advisory records — non-blocking signals (empty by default)
     latency_ms: float
     timestamp: str                    # ISO 8601
 ```
@@ -82,6 +83,7 @@ class RunResult:
     trace: AgentTrace
     armor_active: bool
     verdict_reasoning: str
+    agent_type: str = "unknown"       # rag | tool_use | multi_turn | unknown
 ```
 
 ### State: `AttackOutcome` (enum)
@@ -125,6 +127,18 @@ class AttackOutcome(Enum):
     "avg_latency_ms": float
   },
   "latency_overhead_ms": float,    # avg_with_armor - avg_without_armor
+  "consistency": {                 # per-attack stability across all iterations
+    "<attack_id>": {
+      "bare_blocked": int,
+      "bare_total": int,
+      "armored_blocked": int,
+      "armored_total": int,
+      "bare_block_rate": float,
+      "armored_block_rate": float,
+      "verdict": str              # model_level | armor_adds_protection | missed_both | flaky
+    },
+    ...
+  },
   "results": [RunResult, ...]      # full per-attack result list
 }
 ```

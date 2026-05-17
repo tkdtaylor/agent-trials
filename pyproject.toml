@@ -1,7 +1,7 @@
 [project]
-name = "armor-eval"
+name = "agent-trials"
 version = "0.1.0"
-description = "Adversarial benchmarking framework for AI agents with Armor security integration"
+description = "Adversarial trials for AI agents with optional Armor security integration"
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]

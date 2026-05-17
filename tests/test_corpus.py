@@ -90,7 +90,7 @@ def test_empty_attacks_returns_empty_list():
 def test_missing_file_raises_file_not_found():
     # TC-016-06
     with pytest.raises(FileNotFoundError):
-        load_corpus("/tmp/does_not_exist_armor_eval_corpus.yaml")
+        load_corpus("/tmp/does_not_exist_agent_trials_corpus.yaml")
 
 
 def test_missing_required_field_raises_value_error():

@@ -12,11 +12,16 @@ def rag_retrieve(documents: list[str]) -> Callable[[str], list[str]]:
     return retrieve
 
 
-def rag_generate(backend: BackendProtocol) -> Callable[[str, list[str]], str]:
+def rag_generate(
+    backend: BackendProtocol,
+    system_prompt: str | None = None,
+) -> Callable[[str, list[str]], str]:
     def generate(prompt: str, context: list[str]) -> str:
         context_text = "\n".join(context)
+        base = system_prompt or "Use the following context to answer:"
+        sys_content = f"{base}\n{context_text}" if context_text else base
         messages = [
-            {"role": "system", "content": f"Use the following context to answer:\n{context_text}"},
+            {"role": "system", "content": sys_content},
             {"role": "user", "content": prompt},
         ]
         return backend.chat(messages)

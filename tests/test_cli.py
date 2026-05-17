@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -9,11 +10,19 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _CORPUS = os.path.join(_PROJECT_ROOT, "attacks", "corpus.yaml")
 
 
-def run_cli(*args, cwd=None):
+def run_cli(*args, cwd=None, output=None):
+    """Run the CLI. Writes results to a temp file by default to avoid clobbering results.json."""
     env = os.environ.copy()
     env["PYTHONPATH"] = _PROJECT_ROOT
+    cmd = [sys.executable, "-m", "src", *args]
+    if "--output" not in args and output is not None:
+        cmd += ["--output", output]
+    elif "--output" not in args:
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+            _tmp = f.name
+        cmd += ["--output", _tmp]
     return subprocess.run(
-        [sys.executable, "-m", "src", *args],
+        cmd,
         capture_output=True,
         text=True,
         cwd=cwd or _PROJECT_ROOT,
@@ -46,7 +55,7 @@ def test_unimplemented_agent_exits_one_with_message():
     # TC-017-04
     result = run_cli("--agent", "rag")
     assert result.returncode == 1
-    assert "not yet wired" in result.stderr
+    assert "requires a live LLM backend" in result.stderr
 
 
 # --- Output ---
@@ -69,10 +78,10 @@ def test_stdout_contains_detection_rate():
 
 def test_results_json_written(tmp_path):
     # TC-017-07
-    run_cli("--agent", "echo", "--corpus", _CORPUS, cwd=str(tmp_path))
-    results_file = tmp_path / "results.json"
-    assert results_file.exists()
-    data = json.loads(results_file.read_text())
+    out = str(tmp_path / "results.json")
+    run_cli("--agent", "echo", "--corpus", _CORPUS, output=out)
+    assert (tmp_path / "results.json").exists()
+    data = json.loads((tmp_path / "results.json").read_text())
     assert "total_attacks" in data
 
 
@@ -123,7 +132,7 @@ def test_rag_without_backend_still_exits_one():
     # TC-022-07
     result = run_cli("--agent", "rag")
     assert result.returncode == 1
-    assert "not yet wired" in result.stderr
+    assert "requires a live LLM backend" in result.stderr
 
 
 def test_echo_agent_unaffected_without_backend():

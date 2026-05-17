@@ -1,9 +1,9 @@
 import streamlit as st
 
-from dashboard.helpers import compute_side_by_side, load_results
+from dashboard.helpers import build_attack_table, compute_side_by_side, load_results
 
-st.set_page_config(page_title="Armor Eval Dashboard", layout="wide")
-st.title("Armor Eval — Benchmark Results")
+st.set_page_config(page_title="Agent Trials Dashboard", layout="wide")
+st.title("Agent Trials — Benchmark Results")
 
 results_path = st.sidebar.text_input("Results JSON path", value="")
 
@@ -42,6 +42,25 @@ with col_bare:
 overhead = summary.get("latency_overhead_ms", 0)
 st.metric("Latency overhead (ms)", f"{overhead:.1f}")
 
+# --- Consistency section ---
+consistency = summary.get("consistency", {})
+if consistency:
+    st.header("Consistency")
+    verdict_labels = {
+        "armor_adds_protection": "Armor adds protection",
+        "model_level": "Model-level block (both sides)",
+        "missed_both": "Missed by both",
+        "flaky": "Flaky / inconsistent",
+    }
+    verdict_counts: dict[str, int] = {}
+    for data in consistency.values():
+        v = data.get("verdict", "")
+        verdict_counts[v] = verdict_counts.get(v, 0) + 1
+
+    cols = st.columns(len(verdict_labels))
+    for col, (key, label) in zip(cols, verdict_labels.items(), strict=True):
+        col.metric(label, verdict_counts.get(key, 0))
+
 # --- Per-attack outcome table ---
 st.header("Per-attack results")
 raw_results = summary.get("results", [])
@@ -49,7 +68,8 @@ raw_results = summary.get("results", [])
 if not raw_results:
     st.write("No per-attack results in this summary.")
 else:
-    st.dataframe(raw_results, use_container_width=True)
+    attack_rows = build_attack_table(summary)
+    st.dataframe(attack_rows, use_container_width=True)
 
 # --- Trace viewer ---
 st.header("Trace viewer")

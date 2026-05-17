@@ -1,6 +1,6 @@
 # Architecture — C4 Element Catalog
 
-**Project:** Armor Eval
+**Project:** Agent Trials
 **Last updated:** 2026-05-16
 
 The structured catalog of architectural elements that the diagrams in [`../architecture/diagrams.md`](../architecture/diagrams.md) render.
@@ -19,7 +19,7 @@ The structured catalog of architectural elements that the diagrams in [`../archi
 
 | Name | Type | Description | Owner |
 |------|------|-------------|-------|
-| Armor Eval | In-scope | Adversarial benchmarking framework for AI agents | This team |
+| Agent Trials | In-scope | Adversarial trial framework for AI agents | This team |
 | Armor SDK | External | Security layer that checks agent inputs/outputs for threats | Armor team |
 | Ollama | External | Local LLM inference server (HTTP API) | Open-source |
 | llama-cpp-python | External | Local LLM inference via GGUF model files | Open-source |

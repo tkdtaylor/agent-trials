@@ -1,11 +1,11 @@
-# Armor Eval — Authoritative Spec
+# Agent Trials — Authoritative Spec
 
-**Project:** Armor Eval
+**Project:** Agent Trials
 **Last updated:** 2026-05-16
 
 ## What this directory is
 
-`docs/spec/` is the **authoritative current-state snapshot** of Armor Eval. It answers the question:
+`docs/spec/` is the **authoritative current-state snapshot** of Agent Trials. It answers the question:
 
 > "If the code were deleted tomorrow, what would I need to write down to rebuild it?"
 
@@ -46,9 +46,9 @@ The code is one *realization* of this spec. If the spec and code disagree, one o
 
 ## Project summary
 
-Armor Eval is an adversarial benchmarking framework for AI agents. It runs a curated corpus of attack vectors (prompt injection, exfiltration, tool-call abuse, multi-turn chunked attacks) against pluggable agent archetypes — both with and without the Armor security layer active — and produces a structured report card showing detection rates, false positive rates, latency overhead, and per-attack traces.
+Agent Trials is an adversarial trial framework for AI agents. It runs a curated corpus of attack vectors (prompt injection, exfiltration, tool-call abuse, multi-turn chunked attacks) against pluggable agent archetypes — both with and without the Armor security layer active — and produces a structured report card showing detection rates, false positive rates, latency overhead, and per-attack traces.
 
-The three built-in agent archetypes are: RAG Q&A (retrieval-augmented), tool-use (API/browser), and multi-turn conversational.
+The four built-in agent archetypes are: Echo (offline/testing), RAG Q&A (retrieval-augmented), tool-use (API/browser), and multi-turn conversational.
 
 ## Top-level invariants
 
