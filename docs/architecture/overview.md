@@ -13,7 +13,9 @@ The framework has four moving parts:
 
 1. **Attack Corpus** (`attacks/corpus.yaml`) — a curated YAML file of attack vectors across four threat classes: input injection, exfiltration, tool-call abuse, and multi-turn chunked attacks.
 
-2. **Agent Archetypes** (`src/agents/`) — three concrete implementations of `AgentProtocol`: RAG Q&A, tool-use (API/browser), and multi-turn conversational. The runner instantiates these via a factory function so the harness never depends on concrete classes.
+2. **Agent Archetypes** (`src/agents/`) — four concrete implementations of `AgentProtocol`: Echo (offline/testing), RAG Q&A, tool-use (API/browser), and multi-turn conversational. The runner instantiates these via a factory function so the harness never depends on concrete classes. The Echo agent requires no backend and is the default for offline benchmarking; the others require a `BackendProtocol` implementation.
+
+2a. **Backend Layer** (`src/backends/`) — pluggable LLM backend abstraction. `BackendProtocol` defines a single `chat(messages) -> str` interface. `OllamaBackend` and `LlamaCppBackend` implement it. The adapter layer (`adapters.py`) converts backend instances into the per-agent callables each archetype expects — so agent code never depends on backend types. See ADR 001.
 
 3. **Eval Harness** (`src/runner.py`, `src/agent_wrapper.py`, `src/judge.py`) — the runner drives each attack twice (bare and armored), `ArmorGuard` provides the inline Armor toggle, and the judge determines the outcome independently of the runner.
 
@@ -29,6 +31,9 @@ Visual diagrams (component layout, runtime sequence) live in [diagrams.md](diagr
 | Armor is always optional | `armor_client=None` by default; every Armor call gated on presence | — |
 | AgentProtocol for all archetypes | Runtime duck-typing via Protocol, not ABC | — |
 | Results as pure return values | No database writes in the hot path | — |
+| Pluggable local LLM backends over Anthropic API | `BackendProtocol` abstraction + Ollama/LlamaCpp adapters; agents receive callables, not backend objects | ADR 001 |
+| EchoAgent as default offline archetype | Echoes input; default `--agent echo`; no backend required; enables offline CI and framework correctness testing | ADR 002 |
+| Docker-sandboxed tool execution | `SandboxedToolExecutor` with `--network none --read-only`; opt-in via `--sandbox`; safe demo of successful attacks | ADR 003 |
 
 ## Data flow
 
@@ -39,7 +44,9 @@ Attack vectors from the corpus are loaded at benchmark start. The runner iterate
 | Dependency | Purpose | Notes |
 |------------|---------|-------|
 | Armor SDK | Input/output threat detection | Optional — guarded by `armor_client` presence |
-| Anthropic API | Claude model access for RAG and multi-turn agents | Optional — only used by those archetypes |
+| Ollama | Local LLM inference (HTTP) | Optional — required when `--backend ollama` |
+| llama-cpp-python | Local LLM inference (GGUF files) | Optional — required when `--backend llamacpp` |
+| Docker | Sandboxed tool execution | Optional — required when `--sandbox` is active |
 | Streamlit | Dashboard UI | Dev/local only — not part of the benchmark core |
 
 ## Design principles

@@ -3,6 +3,8 @@ import os
 import subprocess
 import sys
 
+import pytest
+
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _CORPUS = os.path.join(_PROJECT_ROOT, "attacks", "corpus.yaml")
 
@@ -87,3 +89,53 @@ def test_no_armor_flag_accepted():
     # TC-017-09
     result = run_cli("--agent", "echo", "--no-armor")
     assert result.returncode == 0
+
+
+# --- --backend flag validation (TC-022) ---
+
+
+def test_backend_ollama_accepted_with_echo():
+    # TC-022-01
+    result = run_cli("--backend", "ollama", "--agent", "echo")
+    assert result.returncode == 0
+
+
+def test_backend_llamacpp_without_model_path_exits_one():
+    # TC-022-02
+    result = run_cli("--backend", "llamacpp", "--agent", "echo")
+    assert result.returncode == 1
+    assert "--model-path" in result.stderr
+
+
+def test_unknown_backend_rejected():
+    # TC-022-03
+    result = run_cli("--backend", "fakellm")
+    assert result.returncode != 0
+
+
+def test_model_flag_accepted_with_ollama():
+    # TC-022-04
+    result = run_cli("--backend", "ollama", "--model", "llama3", "--agent", "echo")
+    assert result.returncode == 0
+
+
+def test_rag_without_backend_still_exits_one():
+    # TC-022-07
+    result = run_cli("--agent", "rag")
+    assert result.returncode == 1
+    assert "not yet wired" in result.stderr
+
+
+def test_echo_agent_unaffected_without_backend():
+    # TC-022-09
+    result = run_cli("--agent", "echo")
+    assert result.returncode == 0
+
+
+@pytest.mark.integration
+def test_rag_with_ollama_backend_runs():
+    # TC-022-08
+    result = run_cli("--agent", "rag", "--backend", "ollama")
+    assert result.returncode == 0
+    data = json.loads(result.stdout)
+    assert "total_attacks" in data

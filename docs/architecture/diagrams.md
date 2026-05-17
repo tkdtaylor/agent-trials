@@ -1,7 +1,7 @@
 # Architecture Diagrams
 
 **Project:** Armor Eval
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-16 (updated for tasks 013–017: backend layer, Docker sandbox)
 
 C4-structured Mermaid diagrams. See [overview.md](overview.md) for prose context and [`../spec/architecture.md`](../spec/architecture.md) for the structured element catalog these diagrams render.
 
@@ -16,11 +16,13 @@ C4Context
     Person(dev, "Developer / Security Engineer", "Runs adversarial benchmarks before deploying agents")
     System(armor_eval, "Armor Eval", "Adversarial benchmarking framework for AI agents")
     System_Ext(armor_sdk, "Armor SDK", "Input/output threat detection")
-    System_Ext(anthropic, "Anthropic API", "Claude model inference for agent archetypes")
+    System_Ext(ollama, "Ollama", "Local LLM inference server")
+    System_Ext(docker, "Docker", "Container runtime for sandboxed tool execution")
 
     Rel(dev, armor_eval, "Runs benchmarks, views dashboard")
     Rel(armor_eval, armor_sdk, "Checks inputs/outputs", "SDK calls")
-    Rel(armor_eval, anthropic, "Calls Claude", "HTTPS / API")
+    Rel(armor_eval, ollama, "LLM chat completions", "HTTP")
+    Rel(armor_eval, docker, "Sandboxed tool runs", "docker run")
 ```
 
 ---
@@ -35,7 +37,9 @@ C4Container
 
     System_Boundary(boundary, "Armor Eval") {
         Container(runner, "Eval Runner", "Python", "Drives attack runs, coordinates Armor toggle, aggregates results")
-        Container(agents, "Agent Archetypes", "Python", "RAG, tool-use, multi-turn — implement AgentProtocol")
+        Container(agents, "Agent Archetypes", "Python", "Echo, RAG, tool-use, multi-turn — implement AgentProtocol")
+        Container(backends, "Backend Layer", "Python", "BackendProtocol + Ollama/LlamaCpp adapters; converts LLMs into agent callables")
+        Container(sandbox, "SandboxedToolExecutor", "Python + Docker", "Executes tool snippets in Docker (--network none, --read-only)")
         Container(guard, "ArmorGuard", "Python", "Inline Armor wrapper — checks input/output per run")
         Container(judge, "Judge", "Python", "Determines AttackOutcome from agent output and tool calls")
         Container(corpus, "Attack Corpus", "YAML", "Curated attack vectors across four threat classes")
@@ -43,7 +47,8 @@ C4Container
     }
 
     System_Ext(armor_sdk, "Armor SDK")
-    System_Ext(anthropic, "Anthropic API")
+    System_Ext(ollama, "Ollama")
+    System_Ext(docker_rt, "Docker")
 
     Rel(dev, runner, "Invokes")
     Rel(dev, dashboard, "Views results")
@@ -52,7 +57,10 @@ C4Container
     Rel(runner, guard, "Wraps agent for armored runs")
     Rel(runner, judge, "Passes output for verdict")
     Rel(guard, armor_sdk, "check_input / check_output")
-    Rel(agents, anthropic, "Claude inference (RAG, multi-turn)")
+    Rel(agents, backends, "Receives callables from adapter layer")
+    Rel(backends, ollama, "chat completions (OllamaBackend)")
+    Rel(agents, sandbox, "Tool execution (--sandbox mode)")
+    Rel(sandbox, docker_rt, "docker run")
 ```
 
 ---
@@ -65,9 +73,17 @@ C4Component
 
     Container_Boundary(harness, "Eval Harness") {
         Component(runner_cls, "ArmorEvalRunner", "src/runner.py", "run_single_attack, run_benchmark, _aggregate_results")
-        Component(types, "Types", "src/types.py", "AttackVector, AgentTrace, RunResult, AttackOutcome")
+        Component(types, "Types", "src/types.py", "AttackVector, AgentTrace, RunResult, AttackOutcome, AgentResponse")
         Component(guard_cls, "ArmorGuard + AgentProtocol", "src/agent_wrapper.py", "Inline Armor toggle; Protocol all agents satisfy")
         Component(judge_fn, "judge_outcome()", "src/judge.py", "Determines outcome from output + tool calls")
+    }
+
+    Container_Boundary(backend_boundary, "Backend Layer") {
+        Component(protocol, "BackendProtocol", "src/backends/protocol.py", "chat(messages) -> str")
+        Component(adapters, "Adapters", "src/backends/adapters.py", "Factory functions: rag_generate, tool_use_decide, multi_turn_generate, etc.")
+        Component(ollama_b, "OllamaBackend", "src/backends/ollama.py", "Wraps ollama.Client")
+        Component(llama_b, "LlamaCppBackend", "src/backends/llamacpp.py", "Wraps llama_cpp.Llama")
+        Component(sandbox_c, "SandboxedToolExecutor", "src/backends/sandbox.py", "docker run --rm --network none --read-only")
     }
 
     Container(agents_c, "Agent Archetypes", "src/agents/")
@@ -78,6 +94,8 @@ C4Component
     Rel(runner_cls, judge_fn, "Calls for verdict")
     Rel(guard_cls, armor_sdk_c, "check_input / check_output")
     Rel(runner_cls, agents_c, "Instantiates via factory")
+    Rel(adapters, protocol, "Accepts")
+    Rel(adapters, agents_c, "Provides callables to")
 ```
 
 **Key contracts**

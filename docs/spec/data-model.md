@@ -45,6 +45,18 @@ class AttackVector:
     category: str
 ```
 
+### State: `AgentResponse` (dataclass)
+
+```python
+@dataclass
+class AgentResponse:
+    text: str
+```
+
+- **Producers:** `EchoAgent`, `RAGAgent`, `ToolUseAgent`, `MultiTurnAgent` via `process_request()`
+- **Consumers:** `ArmorGuard` (extracts `.text` for Armor output check), `ArmorEvalRunner`
+- **Invariant:** `text` is always a non-None string; empty string is valid (agent produced no output)
+
 ### State: `AgentTrace` (dataclass)
 
 ```python

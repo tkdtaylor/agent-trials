@@ -7,12 +7,12 @@ format:
 	ruff format src/ tests/ dashboard/
 
 test:
-	pytest
+	python -m pytest
 
 # Fitness functions — see docs/spec/fitness-functions.md
 #
 # Each F-NNN rule gets its own target below; the umbrella lists the installed ones.
-fitness: fitness-no-inline-verdict fitness-layering fitness-no-secrets fitness-corpus
+fitness: fitness-no-inline-verdict fitness-layering fitness-no-secrets fitness-corpus fitness-backend
 	@echo "All fitness checks passed."
 
 .PHONY: fitness-no-inline-verdict
@@ -49,6 +49,16 @@ errors = []; \
 [errors.append(f'entry {i}: missing {required - set(e.keys())}') for i, e in enumerate(data.get('attacks', [])) if not required.issubset(e.keys())]; \
 [print(e) for e in errors]; \
 sys.exit(1 if errors else 0)" 2>/dev/null && echo "F-004 (corpus) passed." || echo "F-004 (corpus) FAILED — see output above"
+
+.PHONY: fitness-backend
+fitness-backend:
+	@missing=$$(for f in src/backends/ollama.py src/backends/llamacpp.py; do \
+	  grep -q 'def chat' $$f || echo "$$f missing def chat()"; \
+	done); \
+	if [ -n "$$missing" ]; then \
+	  printf "F-005 (backend) FAILED:\n%s\n" "$$missing"; exit 1; \
+	fi; \
+	echo "F-005 (backend) passed."
 
 check: lint test fitness
 	@echo "All checks passed."

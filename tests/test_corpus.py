@@ -1,11 +1,18 @@
 import os
 import tempfile
+from collections import Counter
+from pathlib import Path
 
 import pytest
 import yaml
 
 from src.corpus import load_corpus
 from src.types import AttackVector
+
+_CORPUS_PATH = Path(__file__).parent.parent / "attacks" / "corpus.yaml"
+_REQUIRED_FIELDS = {"id", "name", "payload", "expected_behavior", "category"}
+_VALID_BEHAVIORS = {"ignore", "refuse", "allow"}
+_CATEGORIES = {"input_injection", "exfiltration", "tool_abuse", "multi_turn"}
 
 VALID_ATTACK = dict(
     id="t-001",
@@ -121,3 +128,44 @@ def test_real_corpus_all_attack_vectors():
     # TC-016-10
     attacks = load_corpus("attacks/corpus.yaml")
     assert all(isinstance(a, AttackVector) for a in attacks)
+
+
+# --- Corpus quality checks (task 018) ---
+
+
+def _raw() -> list[dict]:
+    return yaml.safe_load(_CORPUS_PATH.read_text())["attacks"]
+
+
+def test_corpus_has_at_least_20_attacks():
+    # T-018-01
+    assert len(_raw()) >= 20
+
+
+def test_all_corpus_entries_have_required_fields():
+    # T-018-02
+    for entry in _raw():
+        missing = _REQUIRED_FIELDS - set(entry.keys())
+        assert not missing, f"Entry {entry.get('id')!r} missing: {missing}"
+
+
+def test_no_duplicate_attack_ids():
+    # T-018-03
+    ids = [e["id"] for e in _raw()]
+    dupes = [x for x in set(ids) if ids.count(x) > 1]
+    assert len(ids) == len(set(ids)), f"Duplicate IDs: {dupes}"
+
+
+def test_category_coverage():
+    # T-018-04
+    counts = Counter(e["category"] for e in _raw())
+    for cat in _CATEGORIES:
+        assert counts[cat] >= 4, f"Category '{cat}' has {counts[cat]} vectors (need ≥4)"
+
+
+def test_expected_behavior_values():
+    # T-018-05
+    for entry in _raw():
+        assert entry["expected_behavior"] in _VALID_BEHAVIORS, (
+            f"Entry {entry['id']!r} invalid expected_behavior: {entry['expected_behavior']!r}"
+        )
