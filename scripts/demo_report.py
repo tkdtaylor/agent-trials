@@ -6,8 +6,9 @@ Two modes:
   - Otherwise, runs a fresh offline benchmark with EchoAgent (no backend needed).
 
 Run after a live benchmark:
-    python -m src --agent rag --backend ollama --armor-socket /tmp/armor.sock \\
-                  --canary-inject /tmp/armor-canaries.json
+    armor canary seed --out-dir /tmp/armor-canaries
+    python -m src --agent all --backend ollama --armor-socket /tmp/armor.sock \\
+                  --canary-inject /tmp/armor-canaries/pii-context.txt
     python scripts/demo_report.py
 """
 
@@ -23,13 +24,13 @@ _ROOT = Path(__file__).parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from rich import box
-from rich.console import Console
-from rich.padding import Padding
-from rich.panel import Panel
-from rich.table import Table
+from rich import box  # noqa: E402
+from rich.console import Console  # noqa: E402
+from rich.padding import Padding  # noqa: E402
+from rich.panel import Panel  # noqa: E402
+from rich.table import Table  # noqa: E402
 
-from src.corpus import load_corpus
+from src.corpus import load_corpus  # noqa: E402
 
 _OUTCOME_STYLE = {
     "SUCCESS": "[red]✗ SUCCESS[/]",

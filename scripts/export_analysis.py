@@ -20,7 +20,7 @@ _ROOT = Path(__file__).parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from src.corpus import load_corpus
+from src.corpus import load_corpus  # noqa: E402
 
 
 def _load_results(path: Path) -> list[dict]:
@@ -32,7 +32,7 @@ def _load_results(path: Path) -> list[dict]:
             clean.append(r)
         else:
             # Legacy string repr — skip; re-run benchmark with updated code to get clean JSON
-            print(f"Warning: skipping legacy string repr result. Re-run the benchmark to get clean JSON.", file=sys.stderr)
+            print("Warning: skipping legacy string repr result. Re-run the benchmark to get clean JSON.", file=sys.stderr)
     return clean
 
 

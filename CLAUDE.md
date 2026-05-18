@@ -11,17 +11,13 @@ attacks/          ← YAML attack corpus
 dashboard/        ← Streamlit reporting UI
 tests/            ← pytest test suite
 artifacts/        ← non-code outputs (rendered diagrams, exports, schemas)
-docs/             ← spec + planning + history (the source-of-truth side)
+docs/             ← spec + planning
   spec/               authoritative current-state snapshot — SPEC.md, behaviors, architecture, data-model, interfaces, configuration
   architecture/       narrative overview, diagrams.md, ADRs, tech stack
-  plans/              roadmap, sprints
-  tasks/              active, backlog, completed task files
-    test-specs/       TDD specs — always written before implementation
+  plans/              roadmap
 ```
 
-The key distinction: `docs/` is the input side (read before you act, and the artifact that survives a rewrite), `src/` is the output side (what gets produced).
-
-`docs/spec/` is **dual-natured** — it's the output of every task that changes externally-visible behavior, *and* the input to onboarding, drift audits, and (in the limit) regenerating the codebase from scratch. The code is one realization of the spec. Spec and code that disagree means one of them is wrong; fix it in the same change.
+`docs/spec/` is the source of truth for externally-visible behavior. The code is one realization of the spec. Spec and code that disagree means one of them is wrong; fix it in the same change.
 
 ## Tech stack
 
@@ -99,11 +95,9 @@ Derived working rules:
 
 ## Working in this project
 
-1. Start each session by reading the relevant task file and its test spec
-2. Check `docs/architecture/overview.md` for system context
-3. Write the test spec before any implementation code
-4. Move tasks to `completed/` and update `coverage-tracker.md` when done
-5. **Commit and push immediately after each milestone** — never start the next task without committing the current one first
+1. Check `docs/architecture/overview.md` for system context before making changes
+2. Write tests before implementation code
+3. **Commit and push immediately after each milestone** — never start the next task without committing the current one first
 
 ## Commit rules
 
@@ -183,14 +177,6 @@ export CLAUDE_DISABLED_HOOKS=desktop-notify,batch-format-typecheck  # Disable sp
 - Run `git checkout -- <path>` (or `git checkout <ref> -- <path>`) over a dirty working tree — it silently overwrites uncommitted work and the reflog cannot recover it. To *compare* to a prior commit, use `git diff <ref> -- <path>`, `git show <ref>:<path>`, or `git worktree add ../baseline <ref>`. To *discard* changes, `git stash` first. A `protect-checkout` hook blocks this automatically, but the rule stands even if the hook is disabled.
 - **Append to spec entries instead of rewriting them.** When a decision changes, edit the spec entry to reflect the new truth. The ADR keeps the history — the spec is a snapshot, not a changelog.
 - **Add future-tense statements to the spec.** The spec is what *is*, not what *will be*. Planned work goes in `docs/plans/` and `docs/tasks/`.
-- Add the private trading/financial agent archetype without explicit user approval
-
-## Agent rules and retros
-
-Process-level rules, common rationalizations, and project-specific retros all live in `docs/architecture/agent-rules.md`. The `inject-retros.py` SessionStart hook reads that file and surfaces relevant entries at the start of every session, so adding an entry there is how a one-time mistake becomes a permanent guard.
-
-When dispatching parallel agents in one message, run `scripts/verify-worktree-isolation.sh <agent-id> [<agent-id> ...]` after they complete to confirm none bypassed the worktree flag.
-
 ## Recommended tooling
 
 ### Skills

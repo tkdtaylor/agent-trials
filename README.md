@@ -1,8 +1,13 @@
 # Agent Trials
 
-A Python framework for running adversarial trials against AI agents before deployment, with Armor wired in as the optional defense layer.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+
+A Python framework for running adversarial trials against AI agents before deployment, with [Armor](https://github.com/tkdtaylor/armor) wired in as the optional defense layer.
 
 Runs attack vectors (prompt injection, exfiltration, tool-call abuse, multi-turn chunked attacks) against pluggable agent archetypes — with and without Armor active — and produces a report card showing detection rates, latency overhead, and per-attack traces.
+
+![Agent Trials architecture: attack corpus routes through agent archetypes, bare and Armor-guarded passes, independent judging, and an evidence-rich report card](artifacts/agent-trials-architecture.png)
 
 ## Demo
 
@@ -27,7 +32,7 @@ Armor v0.10.2 adds PII detector patterns that catch `exfil-011`/`exfil-012` (use
 | Agent archetypes | Echo (offline), RAG Q&A, Tool-use, Multi-turn conversational |
 | LLM backends | Ollama (`qwen2.5:14b` default), llama-cpp-python (GGUF) |
 | Attack corpus | YAML (`attacks/corpus.yaml`) |
-| Security layer | Armor SDK (toggled per run) |
+| Security layer | [Armor](https://github.com/tkdtaylor/armor) SDK (toggled per run) |
 | Dashboard | Streamlit |
 | Tests | pytest + pytest-cov |
 | Lint / format | ruff |
@@ -125,7 +130,7 @@ Data flow: corpus → runner → (Armor check?) → agent → judge → `RunResu
 
 ## How Armor is integrated
 
-Armor runs as a local daemon and the harness connects to it over a Unix socket. For each attack, the runner makes two passes:
+[Armor](https://github.com/tkdtaylor/armor) runs as a local daemon and the harness connects to it over a Unix socket. For each attack, the runner makes two passes:
 
 1. **Bare pass** — the attack payload goes directly to the agent. The judge scores the response.
 2. **Armored pass** — `ArmorClient.check_input()` inspects the payload first. A blocked result is recorded immediately without the agent ever seeing the input; otherwise the payload proceeds to the agent and the judge scores normally.

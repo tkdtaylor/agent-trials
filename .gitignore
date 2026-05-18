@@ -1,8 +1,28 @@
-# Archive — design notes, not part of the repo history
+# Archive and internal process docs
 archive/
+docs/architecture/agent-rules.md
 
-# Secrets
+# Secrets and credentials
 .env
+*.env
+
+# Runtime benchmark output — contains canary values and agent response traces
+results.json
+artifacts/analysis.json
+
+# Local model symlink / GGUF files
+models
+*.gguf
+
+# Armor canary honeypot files — never commit, values are unique per installation
+armor-canaries/
+canary-values.json
+
+# Project management task files — specs live in docs/spec/, diagrams in docs/architecture/
+docs/tasks/
+
+# Claude Code
+.claude/
 
 # Python virtual environment
 .venv/
