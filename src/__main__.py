@@ -1,8 +1,10 @@
 import argparse
 import dataclasses
+import hashlib
 import json
 import os
 import sys
+import time
 from enum import Enum
 
 from src.agents.echo_agent import EchoAgent
@@ -178,6 +180,12 @@ def main(argv: list[str] | None = None) -> int:
         metavar="PATH",
         help="Path to write results JSON (default: results.json in cwd)",
     )
+    parser.add_argument(
+        "--db",
+        default="runs.db",
+        metavar="PATH",
+        help="Path to SQLite telemetry database (default: runs.db in cwd)",
+    )
     args = parser.parse_args(argv)
 
     if args.backend == "llamacpp" and not args.model_path:
@@ -198,12 +206,58 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error loading corpus: {e}", file=sys.stderr)
         return 1
 
+    from src.telemetry import RunRecorder
+
     backend = _build_backend(args)
     agent_factory = _build_agent_factory(args, backend)
     armor_client = _build_armor_client(args)
 
+    corpus_hash = hashlib.sha256(
+        open(args.corpus, "rb").read()
+    ).hexdigest()[:16]
+
+    armor_version: str | None = None
+    try:
+        from armor import __version__ as _av
+        armor_version = _av
+    except Exception:
+        pass
+
+    agent_types = (
+        list(agent_factory.keys()) if isinstance(agent_factory, dict) else [args.agent]
+    )
+
+    recorder = RunRecorder(db_path=args.db)
+    run_id = recorder.start_run(
+        model=args.model if args.backend == "ollama" else None,
+        backend=args.backend,
+        agent_types=agent_types,
+        iterations=args.iterations,
+        corpus_hash=corpus_hash,
+        armor_version=armor_version,
+        results_file=args.output,
+    )
+
+    t0 = time.monotonic()
     runner = ArmorEvalRunner(agent_factory, armor_client=armor_client)
     summary = runner.run_benchmark(attacks, iterations=args.iterations)
+    wall_clock = time.monotonic() - t0
+
+    peak_vram = RunRecorder.get_vram_bytes(model=args.model if args.backend == "ollama" else None)
+
+    for result in summary.get("results", []):
+        recorder.record_attack(
+            run_id=run_id,
+            attack_id=result.attack_id,
+            attack_name=result.attack_name,
+            agent_type=result.agent_type,
+            outcome=result.outcome.value,
+            armor_active=result.armor_active,
+            latency_ms=result.trace.latency_ms,
+            verdict_reasoning=result.verdict_reasoning or "",
+        )
+
+    recorder.finish_run(run_id, wall_clock_seconds=wall_clock, peak_vram_bytes=peak_vram)
 
     output = {k: v for k, v in summary.items() if k != "results"}
     output["total_attacks"] = summary["total_attacks"]
