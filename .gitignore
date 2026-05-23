@@ -9,6 +9,7 @@ docs/architecture/agent-rules.md
 # Runtime benchmark output — contains canary values and agent response traces
 results.json
 artifacts/analysis.json
+runs.db
 
 # Local model symlink / GGUF files
 models
