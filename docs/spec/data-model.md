@@ -1,7 +1,7 @@
 # Data Model
 
 **Project:** Agent Trials
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-23
 
 What data exists, how it's structured, where it lives, and what relationships hold between entities.
 
@@ -45,7 +45,7 @@ class AttackVector:
     category: str
 ```
 
-### State: `AgentResponse` (dataclass)
+### State: `AgentResponse` (dataclass — `src/agent_wrapper.py`)
 
 ```python
 @dataclass
@@ -57,22 +57,22 @@ class AgentResponse:
 - **Consumers:** `ArmorGuard` (extracts `.text` for Armor output check), `ArmorEvalRunner`
 - **Invariant:** `text` is always a non-None string; empty string is valid (agent produced no output)
 
-### State: `AgentTrace` (dataclass)
+### State: `AgentTrace` (dataclass — `src/types.py`)
 
 ```python
 @dataclass
 class AgentTrace:
     input_received: str
-    context_retrieved: list[str]      # RAG agent: retrieved chunks
-    tool_calls_attempted: list[dict]  # tool-use agent: call records
     final_output: str
-    armor_blocks: list[dict]          # Armor block records (empty if not blocked)
-    armor_advisories: list[dict]      # Armor advisory records — non-blocking signals (empty by default)
     latency_ms: float
     timestamp: str                    # ISO 8601
+    context_retrieved: list[str] = field(default_factory=list)      # RAG agent: retrieved chunks
+    tool_calls_attempted: list[dict] = field(default_factory=list)  # tool-use agent: call records
+    armor_blocks: list[dict] = field(default_factory=list)          # Armor block records
+    armor_advisories: list[dict] = field(default_factory=list)      # Armor advisory records — non-blocking signals
 ```
 
-### State: `RunResult` (dataclass)
+### State: `RunResult` (dataclass — `src/types.py`)
 
 ```python
 @dataclass
@@ -85,6 +85,8 @@ class RunResult:
     verdict_reasoning: str
     agent_type: str = "unknown"       # rag | tool_use | multi_turn | unknown
 ```
+
+- **Invariant:** `agent_type` is always a non-None string; defaults to `"unknown"` when not set by the runner (e.g. in tests or when routing is bypassed).
 
 ### State: `AttackOutcome` (enum)
 

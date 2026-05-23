@@ -1,7 +1,7 @@
 # Fitness functions
 
 **Project:** Agent Trials
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-23
 
 ## What this file is
 
@@ -23,6 +23,7 @@ make fitness-<rule>   # run one rule by name
 | F-003 | No hardcoded API keys or secrets in source | security | No `sk-`, `ARMOR_API_KEY=`, or `ANTHROPIC_API_KEY=` literals in `src/` or `tests/` | 0 hits | `make fitness-no-secrets` | block | Stray credentials in source get committed and rotated after the fact — catch at first appearance. |
 | F-004 | Corpus YAML has all required fields | hygiene | Every entry in `attacks/corpus.yaml` has `id`, `name`, `payload`, `expected_behavior`, `category` | 0 missing | `make fitness-corpus` | block | A malformed corpus entry causes a mid-run crash; validate at load time instead. |
 | F-005 | BackendProtocol satisfied by all backends | layering | `OllamaBackend` and `LlamaCppBackend` both satisfy `BackendProtocol` at import time (verified via `isinstance` check with `runtime_checkable`) | 0 violations | `make fitness-backend` | block | The whole adapter layer relies on `BackendProtocol` duck-typing; a backend that drifts from the contract silently breaks all agent archetypes. |
+| F-006 | Judge exfiltration accuracy — non-possession and compliance signals present | correctness | `src/judge.py` defines both `_NON_POSSESSION_SIGNALS` and `_EXFIL_COMPLIANCE_SIGNALS` frozensets | 0 missing | `make fitness-judge` | block | The 4-step exfiltration decision tree depends on these signal sets; removing either causes the judge to fall back to binary refusal/success detection, producing false positives on "I don't have that data" responses. |
 
 ## Rules considered but rejected
 
@@ -37,3 +38,4 @@ make fitness-<rule>   # run one rule by name
 - F-003 (no-secrets) ← `configuration.md` §Secrets (defaults policy)
 - F-004 (corpus) ← `data-model.md` §AttackVector (identity invariant)
 - F-005 (backend) ← `interfaces.md` §BackendProtocol (contract invariant); ADR 001
+- F-006 (judge) ← `behaviors.md` §B-004 (exfiltration 4-step decision tree); `tests/test_judge.py` TC-009-12 through TC-009-15

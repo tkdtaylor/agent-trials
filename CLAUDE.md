@@ -6,7 +6,8 @@ A Python framework for running adversarial trials against AI agents before deplo
 
 ```
 src/              ← eval framework (runner, agent_wrapper, judge, types)
-src/agents/       ← concrete agent implementations (RAG, tool-use, multi-turn)
+src/agents/       ← concrete agent implementations (echo, RAG, tool-use, multi-turn)
+src/backends/     ← LLM backend abstraction (BackendProtocol, OllamaBackend, LlamaCppBackend, adapters, sandbox)
 attacks/          ← YAML attack corpus
 dashboard/        ← Streamlit reporting UI
 tests/            ← pytest test suite
@@ -26,7 +27,8 @@ docs/             ← spec + planning
 | Language | Python 3.12 |
 | Framework | — |
 | Eval harness | `src/runner.py`, `src/agent_wrapper.py`, `src/judge.py` |
-| Agent archetypes | `src/agents/rag_agent.py`, `src/agents/tool_use_agent.py`, `src/agents/multi_turn_agent.py` |
+| Agent archetypes | `src/agents/echo_agent.py` (offline), `src/agents/rag_agent.py`, `src/agents/tool_use_agent.py`, `src/agents/multi_turn_agent.py` |
+| LLM backends | `src/backends/` — `OllamaBackend`, `LlamaCppBackend`, `SandboxedToolExecutor` |
 | Attack corpus | YAML (`attacks/corpus.yaml`) |
 | Dashboard | Streamlit (`dashboard/app.py`) |
 | Tests | pytest + pytest-cov |

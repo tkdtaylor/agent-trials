@@ -128,6 +128,49 @@ def test_model_flag_accepted_with_ollama():
     assert result.returncode == 0
 
 
+def test_default_model_is_qwen(tmp_path):
+    # TC-022-05
+    from unittest.mock import patch
+
+    captured_model = []
+
+    class FakeOllamaBackend:
+        def __init__(self, model, think=False):
+            captured_model.append(model)
+
+        def chat(self, messages):
+            return ""
+
+    out = str(tmp_path / "out.json")
+    with patch("src.backends.ollama.OllamaBackend", FakeOllamaBackend):
+        from src.__main__ import main
+
+        rc = main(["--backend", "ollama", "--agent", "echo", "--no-armor", "--output", out])
+
+    assert rc == 0
+    assert captured_model == ["qwen2.5:14b"]
+
+
+def test_model_path_accepted_with_llamacpp(tmp_path):
+    # TC-022-06
+    from unittest.mock import patch
+
+    class FakeLlamaCppBackend:
+        def __init__(self, model_path):
+            pass
+
+        def chat(self, messages):
+            return ""
+
+    out = str(tmp_path / "out.json")
+    with patch("src.backends.llamacpp.LlamaCppBackend", FakeLlamaCppBackend):
+        from src.__main__ import main
+
+        rc = main(["--backend", "llamacpp", "--model-path", "/fake/model.gguf", "--agent", "echo", "--no-armor", "--output", out])
+
+    assert rc == 0
+
+
 def test_rag_without_backend_still_exits_one():
     # TC-022-07
     result = run_cli("--agent", "rag")

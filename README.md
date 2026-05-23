@@ -11,7 +11,7 @@ Runs attack vectors (prompt injection, exfiltration, tool-call abuse, multi-turn
 
 ## Demo
 
-39 attacks across 4 threat categories — 5-iteration run against Armor v0.10.2 daemon with qwen2.5:14b, each attack routed to its natural agent archetype (RAG, tool-use, multi-turn):
+39 attacks across 4 threat categories — 5-iteration run against Armor v0.10.3 daemon with qwen2.5:14b, each attack routed to its natural agent archetype (RAG, tool-use, multi-turn):
 
 | | Bare agent | With Armor |
 |---|---|---|
@@ -20,7 +20,7 @@ Runs attack vectors (prompt injection, exfiltration, tool-call abuse, multi-turn
 | **Armor adds protection** | — | 21 attacks (0% bare → 100% armored) |
 | **Latency** | ~37.5 s avg (LLM calls) | ~0 s avg (Armor blocks most before inference) |
 
-Armor v0.10.2 adds PII detector patterns that catch `exfil-011`/`exfil-012` (user-record enumeration and contact-detail harvesting) when the PII canary honeypot is wired in, a `pii:fake_address` canary type, and a `user-profile.json` honeypot surface. The canary workflow is now a single `armor canary seed --out-dir <path>` command. v0.10.1 added `regex.code_injection`, `regex.exfil_chain`, and `regex.sensitive_file_probe:write-etc-privileged`. 0 false positives. One remaining gap: `exfil-004` PII aggregation is flaky (3/5 armored) — the aggregation payload is broad enough that it partially evades the pattern matcher.
+Armor v0.10.3 adds PII detector patterns that catch `exfil-011`/`exfil-012` (user-record enumeration and contact-detail harvesting) when the PII canary honeypot is wired in, a `pii:fake_address` canary type, and a `user-profile.json` honeypot surface. The canary workflow is now a single `armor canary seed --out-dir <path>` command. v0.10.1 added `regex.code_injection`, `regex.exfil_chain`, and `regex.sensitive_file_probe:write-etc-privileged`. 0 false positives. One remaining gap: `exfil-004` PII aggregation is flaky (3/5 armored) — the aggregation payload is broad enough that it partially evades the pattern matcher.
 
 ![Agent Trials report — per-attack bare vs. armored breakdown](artifacts/demo.svg)
 
@@ -120,7 +120,7 @@ The framework has four moving parts:
 
 **Attack corpus** (`attacks/corpus.yaml`) — a curated set of attack vectors across four threat categories: input injection, exfiltration, tool-call abuse, and multi-turn chunked attacks. Each entry has an `expected_behavior` (`allow`, `ignore`, or `refuse`) that the judge uses to score outcomes.
 
-**Agent archetypes** (`src/agents/`) — implementations of `AgentProtocol` (a single `respond(prompt) -> str` method). The built-in archetypes are Echo (offline, no backend), RAG Q&A, tool-use, and multi-turn conversational. Each is instantiated fresh per run via a factory so the harness stays independent of concrete classes.
+**Agent archetypes** (`src/agents/`) — implementations of `AgentProtocol` (`process_request(user_input: str) -> AgentResponse`). The built-in archetypes are Echo (offline, no backend), RAG Q&A, tool-use, and multi-turn conversational. Each is instantiated fresh per run via a factory so the harness stays independent of concrete classes.
 
 **Eval harness** (`src/runner.py`, `src/judge.py`) — the runner drives each attack twice (bare then armored) for N iterations. The judge scores each response against `expected_behavior` and returns an `AttackOutcome`. The runner aggregates `RunResult` objects into a summary dict with detection rates, false positive rate, latency overhead, and per-attack consistency verdicts.
 
@@ -164,7 +164,7 @@ runner = ArmorEvalRunner(MyAgentFactory, armor_client=armor)
 summary = runner.run_benchmark(attacks, iterations=5)
 ```
 
-`AgentProtocol` requires a single `respond(prompt: str) -> str` method. The runner handles the bare/armored pairing, the judge, and aggregation — your agent only needs to produce a response.
+`AgentProtocol` requires a `process_request(user_input: str) -> AgentResponse` method. The runner handles the bare/armored pairing, the judge, and aggregation — your agent only needs to produce a response.
 
 To extend the attack corpus, add entries to [`attacks/corpus.yaml`](attacks/corpus.yaml). Each entry needs an `id`, `name`, `payload`, `expected_behavior` (`allow`, `ignore`, or `refuse`), and `category`.
 
