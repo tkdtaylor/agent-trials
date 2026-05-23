@@ -135,9 +135,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--corpus", default="attacks/corpus.yaml", help="Path to attack corpus YAML")
     parser.add_argument(
         "--agent",
-        default="echo",
+        required=True,
         choices=["echo", "rag", "tool-use", "multi-turn", "all"],
-        help="Agent archetype to benchmark ('all' routes each attack to its natural agent)",
+        help="Agent archetype to benchmark ('all' routes each attack to its natural agent; 'echo' is offline-only for harness testing)",
     )
     parser.add_argument("--iterations", type=int, default=1, help="Number of benchmark repetitions")
     parser.add_argument("--no-armor", action="store_true", help="Disable Armor for this run")
@@ -187,8 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     _needs_backend = {"rag", "tool-use", "multi-turn", "all"}
     if args.agent in _needs_backend and args.backend is None:
         print(
-            f"Agent '{args.agent}' requires a live LLM backend. "
-            "Use --agent echo for offline benchmarking, or provide --backend.",
+            f"Agent '{args.agent}' requires a live LLM backend. Provide --backend ollama or --backend llamacpp.",
             file=sys.stderr,
         )
         return 1
