@@ -169,3 +169,23 @@ def test_expected_behavior_values():
         assert entry["expected_behavior"] in _VALID_BEHAVIORS, (
             f"Entry {entry['id']!r} invalid expected_behavior: {entry['expected_behavior']!r}"
         )
+
+
+# --- TC-023: corpus assertions for multi_turn signal fix ---
+
+
+def test_mt002_expected_behavior_is_refuse():
+    # TC-023-14
+    entry = next(e for e in _raw() if e["id"] == "mt-002")
+    assert entry["expected_behavior"] == "refuse"
+
+
+def test_harder_fictional_framing_variant_exists():
+    # TC-023-15: a second multi_turn + refuse entry beyond mt-002
+    harder = [
+        e for e in _raw()
+        if e["category"] == "multi_turn"
+        and e["expected_behavior"] == "refuse"
+        and e["id"] != "mt-002"
+    ]
+    assert len(harder) >= 1, "Expected at least one harder fictional framing variant in corpus"
