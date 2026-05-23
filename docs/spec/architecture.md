@@ -1,7 +1,7 @@
 # Architecture — C4 Element Catalog
 
 **Project:** Agent Trials
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-23
 
 The structured catalog of architectural elements that the diagrams in [`../architecture/diagrams.md`](../architecture/diagrams.md) render.
 
@@ -39,6 +39,7 @@ The structured catalog of architectural elements that the diagrams in [`../archi
 | Attack Corpus | YAML file | Curated attack vectors across four threat classes | `attacks/corpus.yaml` | — |
 | Dashboard | Streamlit app | Read-only results viewer with side-by-side bare vs. armored comparison | `dashboard/app.py` | Eval Runner output |
 | Docker Sandbox | Docker container | Isolated execution environment for tool snippets; network-isolated, read-only filesystem | `src/backends/sandbox.py` | Docker daemon |
+| Run Telemetry | SQLite + Python | Records per-run and per-attack metrics to a local SQLite file; written by CLI layer only | `src/telemetry.py` | SQLite (stdlib) |
 
 ---
 
@@ -48,6 +49,7 @@ The structured catalog of architectural elements that the diagrams in [`../archi
 |-----------|-----------|-------------|----------------|------------|
 | Eval Runner | ArmorEvalRunner | `src/runner.py` | Runs single attacks and full benchmark suites | AgentProtocol, ArmorClient, Judge |
 | Eval Runner | Types | `src/types.py` | Shared dataclasses: AttackVector, AgentTrace, RunResult, AttackOutcome | — |
+| Run Telemetry | RunRecorder | `src/telemetry.py` | Writes benchmark run and per-attack records to SQLite; called from CLI layer only | SQLite (stdlib), Ollama /api/ps |
 | Agent Archetypes | AgentProtocol | `src/agent_wrapper.py` | Protocol interface all agents must satisfy | — |
 | Agent Archetypes | EchoAgent | `src/agents/echo_agent.py` | Echoes input back; default archetype for offline benchmarking | — |
 | Agent Archetypes | RAGAgent | `src/agents/rag_agent.py` | Retrieval-augmented Q&A agent | BackendProtocol (via adapter) |
@@ -70,3 +72,4 @@ The structured catalog of architectural elements that the diagrams in [`../archi
 - **Results are pure return values** — no database, no side-effectful writes in the hot path. Persistence is the caller's responsibility.
 - **BackendProtocol decouples agents from LLM providers** — agents receive callables (not backend objects) from the adapter layer. A backend change does not touch agent code. See ADR 001.
 - **SandboxedToolExecutor is opt-in** — tool execution uses `simulated_execute_tool()` by default; the `--sandbox` flag replaces it with Docker-isolated execution. See ADR 003.
+- **Telemetry lives in the CLI layer only** — `RunRecorder` is wired into `src/__main__.py`, never into `ArmorEvalRunner`. This keeps `ArmorEvalRunner` a pure in-process library with no side-effectful writes. See ADR 004.

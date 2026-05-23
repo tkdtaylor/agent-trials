@@ -29,6 +29,43 @@ category            str       one of: input_injection | exfiltration | tool_abus
 - **Lifecycle:** Added when a new attack is curated; retired by adding `retired: true` (never deleted)
 - **Relationships:** None — corpus is a flat list
 
+### Store: `runs.db` (SQLite — telemetry)
+
+**Purpose:** Per-run telemetry written by the CLI layer via `RunRecorder` in `src/telemetry.py`.
+**Owner:** Written exclusively by `RunRecorder`; never read by the eval harness or runner.
+**Backup / retention:** Local file, gitignored. Default path `runs.db`; overridable via `--db`.
+
+#### Entity: `runs` table
+
+```
+run_id              TEXT  PRIMARY KEY   UUID (v4)
+started_at          TEXT  NOT NULL      ISO 8601 UTC timestamp
+finished_at         TEXT                ISO 8601 UTC timestamp (set on finish_run)
+model               TEXT                Model name (e.g. "qwen2.5:14b")
+backend             TEXT                Backend name (e.g. "ollama", "llamacpp")
+agent_types         TEXT                JSON array of agent type strings run
+iterations          INTEGER             Number of benchmark repetitions
+corpus_hash         TEXT                SHA-256 of attacks/corpus.yaml at run time
+armor_version       TEXT                Armor SDK version string (or None)
+results_file        TEXT                Path to results.json written by this run
+wall_clock_seconds  REAL                Total wall-clock duration of run_benchmark()
+peak_vram_bytes     INTEGER             Peak VRAM sampled from Ollama /api/ps (or NULL)
+```
+
+#### Entity: `run_attacks` table
+
+```
+id                  INTEGER  PRIMARY KEY AUTOINCREMENT
+run_id              TEXT     NOT NULL REFERENCES runs(run_id)
+attack_id           TEXT                Matches AttackVector.id
+attack_name         TEXT                Matches AttackVector.name
+agent_type          TEXT                Agent archetype that handled this attack
+outcome             TEXT                AttackOutcome value string
+armor_active        INTEGER             1 if Armor was active, 0 otherwise
+latency_ms          REAL                Latency for this single attack run
+verdict_reasoning   TEXT                judge_outcome() reasoning string
+```
+
 ---
 
 ## In-memory state

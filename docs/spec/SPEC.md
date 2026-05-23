@@ -1,7 +1,7 @@
 # Agent Trials — Authoritative Spec
 
 **Project:** Agent Trials
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-23
 
 ## What this directory is
 

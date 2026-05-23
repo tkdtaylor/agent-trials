@@ -58,13 +58,15 @@ sys.exit(1 if errors else 0)" 2>/dev/null && echo "F-004 (corpus) passed." || ec
 
 .PHONY: fitness-backend
 fitness-backend:
-	@missing=$$(for f in src/backends/ollama.py src/backends/llamacpp.py; do \
-	  grep -q 'def chat' $$f || echo "$$f missing def chat()"; \
-	done); \
-	if [ -n "$$missing" ]; then \
-	  printf "F-005 (backend) FAILED:\n%s\n" "$$missing"; exit 1; \
-	fi; \
-	echo "F-005 (backend) passed."
+	@python3 -c "\
+from src.backends.protocol import BackendProtocol; \
+from src.backends.ollama import OllamaBackend; \
+from src.backends.llamacpp import LlamaCppBackend; \
+errors = []; \
+[errors.append(f'{cls.__name__} does not satisfy BackendProtocol (missing chat())') \
+ for cls in [OllamaBackend, LlamaCppBackend] if not hasattr(cls, 'chat')]; \
+[print(e) for e in errors]; \
+import sys; sys.exit(1 if errors else 0)" && echo "F-005 (backend) passed." || (echo "F-005 (backend) FAILED — see output above"; exit 1)
 
 .PHONY: fitness-judge
 fitness-judge:

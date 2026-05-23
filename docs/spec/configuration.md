@@ -1,7 +1,7 @@
 # Configuration
 
 **Project:** Agent Trials
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-23
 
 Every knob the system exposes — env vars, config files, runtime parameters.
 
@@ -27,6 +27,7 @@ See `interfaces.md` CLI section for flags passed to benchmark runs. Key runtime 
 |-----------|-----------|---------|--------|
 | `enable_armor` | `run_single_attack(attack, enable_armor=True)` | `True` | Toggle Armor for a single run |
 | `iterations` | `run_benchmark(attacks, iterations=1)` | `1` | Number of benchmark repetitions |
+| `--db` | CLI flag | `runs.db` | SQLite telemetry file path; written by `RunRecorder` in `src/telemetry.py` |
 
 ---
 

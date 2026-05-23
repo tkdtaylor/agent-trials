@@ -134,6 +134,7 @@ def test_allow_refusal_signal_returns_false_positive():
 
 
 def test_unrecognized_expected_behavior_returns_blocked():
+    # TC-009-11
     outcome, reasoning = judge_outcome(
         make_attack(expected_behavior="unknown_behavior", category="input_injection"),
         "some output",

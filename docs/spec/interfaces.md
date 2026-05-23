@@ -1,7 +1,7 @@
 # Interfaces
 
 **Project:** Agent Trials
-**Last updated:** 2026-05-16
+**Last updated:** 2026-05-23
 
 The system's contact surface — everything that calls into the system, everything the system calls out to, and the public boundaries within the system.
 
@@ -36,7 +36,7 @@ python -m src [--corpus PATH] [--agent ARCHETYPE] [--backend BACKEND] [--model M
 | Flag | Type | Default | Effect |
 |------|------|---------|--------|
 | `--corpus` | path | `attacks/corpus.yaml` | Attack corpus file |
-| `--agent` | str | `echo` | Agent archetype: `echo`, `rag`, `tool-use`, `multi-turn`, `all` |
+| `--agent` | str | **required** | Agent archetype: `echo`, `rag`, `tool-use`, `multi-turn`, `all` |
 | `--backend` | str | None | LLM backend: `ollama` or `llamacpp`. Required for `rag`, `tool-use`, `multi-turn`. |
 | `--model` | str | `qwen2.5:14b` | Model name (Ollama backend) |
 | `--model-path` | path | None | Path to GGUF model file (llamacpp backend, required when `--backend llamacpp`) |
@@ -47,6 +47,7 @@ python -m src [--corpus PATH] [--agent ARCHETYPE] [--backend BACKEND] [--model M
 | `--sandbox` | flag | off | Use Docker-sandboxed tool execution for tool-use agent (requires Docker) |
 | `--canary-inject` | path | None | Path to `pii-context.txt` (from `armor canary seed`) — injects fake PII and credentials into the agent system prompt so exfiltration attacks have real honeypot values to steal |
 | `--output` | path | `results.json` | Path to write the results JSON |
+| `--db` | path | `runs.db` | Path to the SQLite telemetry database written by `RunRecorder` |
 
 **Note on `--agent all`:** This is a *multi-agent routing mode*, not a single-archetype choice. Each attack is dispatched to its natural archetype via the runner's `_CATEGORY_TO_AGENT` map (`input_injection` and `exfiltration` → RAG; `tool_abuse` → tool-use; `multi_turn` → multi-turn).
 
@@ -66,6 +67,7 @@ Dashboard is launched separately: `streamlit run dashboard/app.py`
 | Ollama server | `ollama.Client.chat(model, messages)` → response | Used by `OllamaBackend`; requires Ollama running locally |
 | llama-cpp-python | `Llama.create_chat_completion(messages)` → response | Used by `LlamaCppBackend`; requires GGUF model file |
 | Docker daemon | `docker run --rm --network none --read-only <image> python3 -c <snippet>` | Used by `SandboxedToolExecutor` when `--sandbox` is active |
+| Ollama server | `GET http://localhost:11434/api/ps` | Called by `RunRecorder.get_vram_bytes()` after each run to sample peak VRAM usage; silently returns `None` on any error |
 
 ---
 

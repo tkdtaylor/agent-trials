@@ -11,7 +11,7 @@ Runs attack vectors (prompt injection, exfiltration, tool-call abuse, multi-turn
 
 ## Demo
 
-39 attacks across 4 threat categories — 5-iteration run against Armor v0.10.3 daemon with qwen2.5:14b, each attack routed to its natural agent archetype (RAG, tool-use, multi-turn):
+40 attacks across 4 threat categories — 5-iteration run against Armor v0.10.3 daemon with qwen2.5:14b, each attack routed to its natural agent archetype (RAG, tool-use, multi-turn):
 
 | | Bare agent | With Armor |
 |---|---|---|
@@ -99,6 +99,9 @@ python -m src --agent multi-turn --backend llamacpp --model-path /path/to/model.
 # Docker-sandboxed tool execution
 python -m src --agent tool-use --backend ollama --sandbox
 
+# Custom SQLite telemetry path
+python -m src --agent rag --backend ollama --db /path/to/mytelemetry.db
+
 # View results in the dashboard
 streamlit run dashboard/app.py
 ```
@@ -123,6 +126,8 @@ The framework has four moving parts:
 **Agent archetypes** (`src/agents/`) — implementations of `AgentProtocol` (`process_request(user_input: str) -> AgentResponse`). The built-in archetypes are Echo (offline, no backend), RAG Q&A, tool-use, and multi-turn conversational. Each is instantiated fresh per run via a factory so the harness stays independent of concrete classes.
 
 **Eval harness** (`src/runner.py`, `src/judge.py`) — the runner drives each attack twice (bare then armored) for N iterations. The judge scores each response against `expected_behavior` and returns an `AttackOutcome`. The runner aggregates `RunResult` objects into a summary dict with detection rates, false positive rate, latency overhead, and per-attack consistency verdicts.
+
+**Run telemetry** (`src/telemetry.py`) — the CLI layer writes each benchmark run to a local SQLite file (`runs.db` by default, overridable via `--db`). The `runs` table records model, backend, corpus hash, Armor version, and wall-clock time; `run_attacks` records per-attack outcomes, latency, and verdict reasoning. VRAM usage is sampled from Ollama's `/api/ps` endpoint after each run.
 
 **Dashboard** (`dashboard/app.py`) — Streamlit UI that reads benchmark results and renders a side-by-side comparison with a per-attack trace viewer.
 
@@ -173,6 +178,7 @@ To extend the attack corpus, add entries to [`attacks/corpus.yaml`](attacks/corp
 - [`src/runner.py`](src/runner.py) — eval harness (`ArmorEvalRunner`, `run_benchmark`)
 - [`src/agent_wrapper.py`](src/agent_wrapper.py) — `AgentProtocol` interface
 - [`src/judge.py`](src/judge.py) — response scoring logic
+- [`src/telemetry.py`](src/telemetry.py) — SQLite run telemetry (`RunRecorder`)
 - [`attacks/corpus.yaml`](attacks/corpus.yaml) — attack corpus
 - [`dashboard/app.py`](dashboard/app.py) — Streamlit results UI
 - [`docs/architecture/overview.md`](docs/architecture/overview.md) — system design

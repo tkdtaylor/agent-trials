@@ -212,9 +212,8 @@ def main(argv: list[str] | None = None) -> int:
     agent_factory = _build_agent_factory(args, backend)
     armor_client = _build_armor_client(args)
 
-    corpus_hash = hashlib.sha256(
-        open(args.corpus, "rb").read()
-    ).hexdigest()[:16]
+    with open(args.corpus, "rb") as _f:
+        corpus_hash = hashlib.sha256(_f.read()).hexdigest()[:16]
 
     armor_version: str | None = None
     try:

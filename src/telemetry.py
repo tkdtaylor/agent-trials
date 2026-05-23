@@ -1,11 +1,9 @@
 import json
 import sqlite3
 import uuid
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Optional
-from urllib.request import urlopen
+from datetime import UTC, datetime
 from urllib.error import URLError
+from urllib.request import urlopen
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS runs (
@@ -51,16 +49,16 @@ class RunRecorder:
 
     def start_run(
         self,
-        model: Optional[str],
-        backend: Optional[str],
+        model: str | None,
+        backend: str | None,
         agent_types: list[str],
         iterations: int,
-        corpus_hash: Optional[str],
-        armor_version: Optional[str],
-        results_file: Optional[str],
+        corpus_hash: str | None,
+        armor_version: str | None,
+        results_file: str | None,
     ) -> str:
         run_id = str(uuid.uuid4())
-        started_at = datetime.now(timezone.utc).isoformat()
+        started_at = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 """INSERT INTO runs
@@ -85,9 +83,9 @@ class RunRecorder:
         self,
         run_id: str,
         wall_clock_seconds: float,
-        peak_vram_bytes: Optional[int] = None,
+        peak_vram_bytes: int | None = None,
     ) -> None:
-        finished_at = datetime.now(timezone.utc).isoformat()
+        finished_at = datetime.now(UTC).isoformat()
         with self._connect() as conn:
             conn.execute(
                 """UPDATE runs
@@ -126,7 +124,7 @@ class RunRecorder:
             )
 
     @staticmethod
-    def get_vram_bytes(model: Optional[str] = None) -> Optional[int]:
+    def get_vram_bytes(model: str | None = None) -> int | None:
         try:
             with urlopen("http://localhost:11434/api/ps", timeout=2) as resp:
                 data = json.loads(resp.read())

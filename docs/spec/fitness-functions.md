@@ -38,4 +38,4 @@ make fitness-<rule>   # run one rule by name
 - F-003 (no-secrets) ← `configuration.md` §Secrets (defaults policy)
 - F-004 (corpus) ← `data-model.md` §AttackVector (identity invariant)
 - F-005 (backend) ← `interfaces.md` §BackendProtocol (contract invariant); ADR 001
-- F-006 (judge) ← `behaviors.md` §B-004 (exfiltration 4-step decision tree); `tests/test_judge.py` TC-009-12 through TC-009-15
+- F-006 (judge) ← `behaviors.md` §B-004 (exfiltration 4-step decision tree); `tests/test_judge.py` TC-009-11 through TC-009-15

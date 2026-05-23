@@ -1,7 +1,7 @@
 # Architecture Diagrams
 
 **Project:** Agent Trials
-**Last updated:** 2026-05-18 (updated for per-agent routing, canary seeding, and Armor v0.10.2)
+**Last updated:** 2026-05-23 (added RunRecorder telemetry container; Ollama /api/ps outbound dependency)
 
 C4-structured Mermaid diagrams. See [overview.md](overview.md) for prose context and [`../spec/architecture.md`](../spec/architecture.md) for the structured element catalog these diagrams render.
 
@@ -44,6 +44,7 @@ C4Container
         Container(judge, "Judge", "Python", "Determines AttackOutcome from agent output and tool calls")
         Container(corpus, "Attack Corpus", "YAML", "Curated attack vectors across four threat classes")
         Container(dashboard, "Dashboard", "Streamlit", "Read-only results viewer")
+        Container(telemetry, "Run Telemetry", "Python + SQLite", "RunRecorder — writes per-run and per-attack metrics to runs.db")
     }
 
     System_Ext(armor_sdk, "Armor SDK")
@@ -61,6 +62,7 @@ C4Container
     Rel(backends, ollama, "chat completions (OllamaBackend)")
     Rel(agents, sandbox, "Tool execution (--sandbox mode)")
     Rel(sandbox, docker_rt, "docker run")
+    Rel(telemetry, ollama, "GET /api/ps (VRAM sampling)", "HTTP")
 ```
 
 ---
