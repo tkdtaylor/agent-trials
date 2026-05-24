@@ -22,7 +22,7 @@ def _benign_attack(id: str) -> AttackVector:
 # TC-020-01
 def test_consistency_key_present_multi_iter():
     runner = ArmorEvalRunner(EchoAgent)
-    summary = runner.run_benchmark([_attack("a1"), _attack("a2")], iterations=3)
+    summary, _ = runner.run_benchmark([_attack("a1"), _attack("a2")], iterations=3)
     assert "consistency" in summary
     assert "a1" in summary["consistency"]
     c = summary["consistency"]["a1"]
@@ -36,7 +36,7 @@ def test_consistency_key_present_multi_iter():
 # TC-020-02
 def test_consistency_totals_one_for_single_iter():
     runner = ArmorEvalRunner(EchoAgent)
-    summary = runner.run_benchmark([_attack("a1")], iterations=1)
+    summary, _ = runner.run_benchmark([_attack("a1")], iterations=1)
     c = summary["consistency"]["a1"]
     assert c["bare_total"] == 1
     assert c["armored_total"] == 1
@@ -46,7 +46,7 @@ def test_consistency_totals_one_for_single_iter():
 def test_verdict_model_level():
     # EchoAgent echoes injection keywords; judge sees them and returns BLOCKED in both modes
     runner = ArmorEvalRunner(EchoAgent)
-    summary = runner.run_benchmark([_attack("a1")], iterations=5)
+    summary, _ = runner.run_benchmark([_attack("a1")], iterations=5)
     c = summary["consistency"]["a1"]
     assert c["verdict"] == "model_level"
     assert c["bare_blocked"] == 5
@@ -56,7 +56,7 @@ def test_verdict_model_level():
 # TC-020-04
 def test_verdict_missed_both():
     runner = ArmorEvalRunner(EchoAgent)
-    summary = runner.run_benchmark([_benign_attack("b1")], iterations=5)
+    summary, _ = runner.run_benchmark([_benign_attack("b1")], iterations=5)
     c = summary["consistency"]["b1"]
     assert c["verdict"] == "missed_both"
     assert c["bare_blocked"] == 0
@@ -75,7 +75,7 @@ def test_verdict_armor_adds_protection():
     mock_armor.check_output.return_value = output_verdict
 
     runner = ArmorEvalRunner(EchoAgent, armor_client=mock_armor)
-    summary = runner.run_benchmark([_benign_attack("b1")], iterations=5)
+    summary, _ = runner.run_benchmark([_benign_attack("b1")], iterations=5)
     c = summary["consistency"]["b1"]
     assert c["verdict"] == "armor_adds_protection"
     assert c["bare_blocked"] == 0
@@ -85,7 +85,7 @@ def test_verdict_armor_adds_protection():
 # TC-020-06
 def test_block_rates_in_consistency_dict():
     runner = ArmorEvalRunner(EchoAgent)
-    summary = runner.run_benchmark([_attack("a1")], iterations=4)
+    summary, _ = runner.run_benchmark([_attack("a1")], iterations=4)
     c = summary["consistency"]["a1"]
     assert "bare_block_rate" in c
     assert "armored_block_rate" in c
@@ -97,6 +97,6 @@ def test_block_rates_in_consistency_dict():
 def test_all_attacks_have_consistency_entry():
     attacks = load_corpus("attacks/corpus.yaml")
     runner = ArmorEvalRunner(EchoAgent)
-    summary = runner.run_benchmark(attacks, iterations=2)
+    summary, _ = runner.run_benchmark(attacks, iterations=2)
     for attack in attacks:
         assert attack.id in summary["consistency"], f"missing consistency for {attack.id}"

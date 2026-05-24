@@ -11,7 +11,8 @@ from src.runner import ArmorEvalRunner
 
 def _real_summary():
     attacks = load_corpus("attacks/corpus.yaml")
-    return ArmorEvalRunner(EchoAgent).run_benchmark(attacks[:2], iterations=1)
+    summary, _ = ArmorEvalRunner(EchoAgent).run_benchmark(attacks[:2], iterations=1)
+    return summary
 
 
 # --- save_results ---

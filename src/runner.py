@@ -153,13 +153,13 @@ class ArmorEvalRunner:
                 agent_type=agent_type,
             )
 
-    def run_benchmark(self, attacks: list[AttackVector], iterations: int = 1) -> dict:
+    def run_benchmark(self, attacks: list[AttackVector], iterations: int = 1) -> tuple[dict, list[RunResult]]:
         results: list[RunResult] = []
         for _ in range(iterations):
             for attack in attacks:
                 results.append(self.run_single_attack(attack, enable_armor=False))
                 results.append(self.run_single_attack(attack, enable_armor=True))
-        return self._aggregate_results(attacks, results)
+        return self._aggregate_results(attacks, results), results
 
     def _aggregate_results(self, attacks: list[AttackVector], results: list[RunResult]) -> dict:
         without_armor = [r for r in results if not r.armor_active]
@@ -172,7 +172,6 @@ class ArmorEvalRunner:
             "without_armor": without_summary,
             "latency_overhead_ms": with_summary["avg_latency_ms"] - without_summary["avg_latency_ms"],
             "consistency": _consistency(results),
-            "results": results,
         }
 
 

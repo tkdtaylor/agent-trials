@@ -3,11 +3,19 @@ import dataclasses
 import hashlib
 import json
 import os
+import pathlib
 import sys
 import time
 from enum import Enum
 
 from src.agents.echo_agent import EchoAgent
+from src.checkpoints import (
+    checkpoint_path,
+    is_checkpointed,
+    load_checkpoint,
+    split_into_groups,
+    write_checkpoint,
+)
 from src.corpus import load_corpus
 from src.runner import ArmorEvalRunner
 
@@ -132,7 +140,12 @@ def _build_armor_client(args):
         return None
 
 
-def main(argv: list[str] | None = None) -> int:
+def _build_parser() -> argparse.ArgumentParser:
+    """Build and return the argument parser for the CLI.
+
+    Extracted for testability — allows tests to introspect flag defaults
+    without side effects.
+    """
     parser = argparse.ArgumentParser(prog="agent-trials", description="Adversarial trial runner")
     parser.add_argument("--corpus", default="attacks/corpus.yaml", help="Path to attack corpus YAML")
     parser.add_argument(
@@ -141,7 +154,8 @@ def main(argv: list[str] | None = None) -> int:
         choices=["echo", "rag", "tool-use", "multi-turn", "all"],
         help="Agent archetype to benchmark ('all' routes each attack to its natural agent; 'echo' is offline-only for harness testing)",
     )
-    parser.add_argument("--iterations", type=int, default=1, help="Number of benchmark repetitions")
+    parser.add_argument("--iterations", type=int, default=5, help="Number of benchmark repetitions")
+    parser.add_argument("--group-size", type=int, default=8, help="Number of attacks per group")
     parser.add_argument("--no-armor", action="store_true", help="Disable Armor for this run")
     parser.add_argument(
         "--armor-socket",
@@ -186,6 +200,11 @@ def main(argv: list[str] | None = None) -> int:
         metavar="PATH",
         help="Path to SQLite telemetry database (default: runs.db in cwd)",
     )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _build_parser()
     args = parser.parse_args(argv)
 
     if args.backend == "llamacpp" and not args.model_path:
@@ -239,31 +258,49 @@ def main(argv: list[str] | None = None) -> int:
 
     t0 = time.monotonic()
     runner = ArmorEvalRunner(agent_factory, armor_client=armor_client)
-    summary = runner.run_benchmark(attacks, iterations=args.iterations)
+
+    # Split attacks into groups and run them, with checkpoint support
+    groups = split_into_groups(attacks, args.group_size)
+    all_results = []
+    output_path = pathlib.Path(args.output)
+
+    for idx, group in enumerate(groups):
+        cp = checkpoint_path(output_path, idx)
+        if is_checkpointed(output_path, idx):
+            group_results = load_checkpoint(cp)
+            all_results.extend(group_results)
+            continue
+
+        _, group_results = runner.run_benchmark(group, iterations=args.iterations)
+        all_results.extend(group_results)
+
+        # Record to SQLite immediately after each group
+        for result in group_results:
+            recorder.record_attack(
+                run_id=run_id,
+                attack_id=result.attack_id,
+                attack_name=result.attack_name,
+                agent_type=result.agent_type,
+                outcome=result.outcome.value,
+                armor_active=result.armor_active,
+                latency_ms=result.trace.latency_ms,
+                verdict_reasoning=result.verdict_reasoning or "",
+            )
+
+        write_checkpoint(cp, group_results)
+
     wall_clock = time.monotonic() - t0
 
+    # Build final summary from all accumulated results
+    final_summary = runner._aggregate_results(attacks, all_results)
+
     peak_vram = RunRecorder.get_vram_bytes(model=args.model if args.backend == "ollama" else None)
-
-    for result in summary.get("results", []):
-        recorder.record_attack(
-            run_id=run_id,
-            attack_id=result.attack_id,
-            attack_name=result.attack_name,
-            agent_type=result.agent_type,
-            outcome=result.outcome.value,
-            armor_active=result.armor_active,
-            latency_ms=result.trace.latency_ms,
-            verdict_reasoning=result.verdict_reasoning or "",
-        )
-
     recorder.finish_run(run_id, wall_clock_seconds=wall_clock, peak_vram_bytes=peak_vram)
 
-    output = {k: v for k, v in summary.items() if k != "results"}
-    output["total_attacks"] = summary["total_attacks"]
-    print(json.dumps(output, indent=2))
+    print(json.dumps(final_summary, indent=2))
 
     with open(args.output, "w") as f:
-        json.dump(summary, f, default=_json_default, indent=2)
+        json.dump(final_summary, f, default=_json_default, indent=2)
 
     return 0
 
