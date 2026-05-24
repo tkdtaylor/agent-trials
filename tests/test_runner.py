@@ -213,8 +213,8 @@ def test_latency_ms_nonnegative_on_all_paths():
 def test_benchmark_returns_required_keys():
     # TC-011-15
     runner = ArmorEvalRunner(stub_factory())
-    summary = runner.run_benchmark([make_attack()])
-    assert {"total_attacks", "with_armor", "without_armor", "latency_overhead_ms", "results"} <= summary.keys()
+    summary, _ = runner.run_benchmark([make_attack()])
+    assert {"total_attacks", "with_armor", "without_armor", "latency_overhead_ms"} <= summary.keys()
 
 
 def test_benchmark_total_attacks_equals_len_attacks():
@@ -222,21 +222,22 @@ def test_benchmark_total_attacks_equals_len_attacks():
     runner = ArmorEvalRunner(stub_factory())
     a1 = make_attack(id="a1")
     a2 = make_attack(id="a2")
-    assert runner.run_benchmark([a1, a2])["total_attacks"] == 2
+    summary, _ = runner.run_benchmark([a1, a2])
+    assert summary["total_attacks"] == 2
 
 
 def test_benchmark_one_attack_one_iteration_produces_two_results():
     # TC-011-17
     runner = ArmorEvalRunner(stub_factory())
-    summary = runner.run_benchmark([make_attack()], iterations=1)
-    assert len(summary["results"]) == 2
+    _, raw_results = runner.run_benchmark([make_attack()], iterations=1)
+    assert len(raw_results) == 2
 
 
 def test_benchmark_two_iterations_produces_four_results():
     # TC-011-18
     runner = ArmorEvalRunner(stub_factory())
-    summary = runner.run_benchmark([make_attack()], iterations=2)
-    assert len(summary["results"]) == 4
+    _, raw_results = runner.run_benchmark([make_attack()], iterations=2)
+    assert len(raw_results) == 4
 
 
 # --- _aggregate_results ---

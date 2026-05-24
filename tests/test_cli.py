@@ -191,3 +191,21 @@ def test_rag_with_ollama_backend_runs():
     assert result.returncode == 0
     data = json.loads(result.stdout)
     assert "total_attacks" in data
+
+
+# --- Grouping and checkpoints (TC-024) ---
+
+
+def test_group_size_flag_accepted():
+    # TC-024-13
+    result = run_cli("--agent", "echo", "--group-size", "4")
+    assert result.returncode == 0
+
+
+def test_group_size_creates_checkpoints(tmp_path):
+    # TC-024-14 (extended from TC-024-18)
+    out = str(tmp_path / "results.json")
+    run_cli("--agent", "echo", "--group-size", "4", "--iterations", "1", output=out)
+    # At least one checkpoint should exist
+    checkpoints = list(tmp_path.glob("results_group_*.json"))
+    assert len(checkpoints) >= 1

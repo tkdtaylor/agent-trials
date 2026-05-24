@@ -21,14 +21,14 @@ class ArmorEvalRunner:
         armor_client=None,
     ): ...
     def run_single_attack(self, attack: AttackVector, enable_armor: bool = True) -> RunResult: ...
-    def run_benchmark(self, attacks: list[AttackVector], iterations: int = 1) -> dict: ...
+    def run_benchmark(self, attacks: list[AttackVector], iterations: int = 1) -> tuple[dict, list[RunResult]]: ...
 ```
 
 ### CLI
 
 ```
 python -m src [--corpus PATH] [--agent ARCHETYPE] [--backend BACKEND] [--model MODEL]
-              [--model-path PATH] [--iterations N] [--no-armor]
+              [--model-path PATH] [--iterations N] [--group-size N] [--no-armor]
               [--armor-socket PATH] [--think] [--sandbox]
               [--canary-inject PATH] [--output PATH]
 ```
@@ -40,7 +40,8 @@ python -m src [--corpus PATH] [--agent ARCHETYPE] [--backend BACKEND] [--model M
 | `--backend` | str | None | LLM backend: `ollama` or `llamacpp`. Required for `rag`, `tool-use`, `multi-turn`. |
 | `--model` | str | `qwen2.5:14b` | Model name (Ollama backend) |
 | `--model-path` | path | None | Path to GGUF model file (llamacpp backend, required when `--backend llamacpp`) |
-| `--iterations` | int | 1 | Number of benchmark repetitions |
+| `--iterations` | int | 5 | Number of benchmark repetitions |
+| `--group-size` | int | 8 | Number of attacks per group (for checkpoint-based resumption) |
 | `--no-armor` | flag | off | Disable Armor for this run |
 | `--armor-socket` | path | `$ARMOR_SOCKET` or `/var/run/armor.sock` | Unix socket path for the Armor daemon |
 | `--think` | flag | off | Enable extended thinking for Ollama models that support it (e.g. qwen3.x) |

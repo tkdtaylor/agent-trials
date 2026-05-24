@@ -26,7 +26,8 @@ See `interfaces.md` CLI section for flags passed to benchmark runs. Key runtime 
 | Parameter | Where set | Default | Effect |
 |-----------|-----------|---------|--------|
 | `enable_armor` | `run_single_attack(attack, enable_armor=True)` | `True` | Toggle Armor for a single run |
-| `iterations` | `run_benchmark(attacks, iterations=1)` | `1` | Number of benchmark repetitions |
+| `iterations` | `run_benchmark(attacks, iterations=1)` or `--iterations` CLI flag | `5` | Number of benchmark repetitions |
+| `group_size` | `--group-size` CLI flag | `8` | Number of attacks per group (for checkpoint-based resumption) |
 | `--db` | CLI flag | `runs.db` | SQLite telemetry file path; written by `RunRecorder` in `src/telemetry.py` |
 
 ---

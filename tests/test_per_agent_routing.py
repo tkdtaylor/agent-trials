@@ -133,8 +133,8 @@ def test_agent_type_in_all_benchmark_results():
         _make_attack("t1", "tool_abuse"),
         _make_attack("m1", "multi_turn"),
     ]
-    summary = runner.run_benchmark(attacks, iterations=1)
-    for r in summary["results"]:
+    _, results = runner.run_benchmark(attacks, iterations=1)
+    for r in results:
         agent_type = r.agent_type if dataclasses.is_dataclass(r) else r.get("agent_type", "")
         assert agent_type, f"Empty agent_type for result: {r}"
 
