@@ -1,6 +1,6 @@
 # Archive and internal process docs
 archive/
-docs/architecture/agent-rules.md
+docs/agent-rules.md
 
 # Secrets and credentials
 .env

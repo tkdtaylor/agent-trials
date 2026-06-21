@@ -1,6 +1,6 @@
 # Architecture Overview
 
-**Project:** Agent Trials
+**Project:** agent-trials
 **Last updated:** 2026-05-18
 
 ## What this is
@@ -59,21 +59,13 @@ For **armored runs**, the setup is:
 
 ## Design principles
 
-This project follows **Unix philosophy** as its default design approach — favoring **composability over monolithic design**. The operating-system analogy is deliberate: complex behavior should emerge from combining small, independent components that communicate through standardized interfaces.
-
-### The four structural properties to design for
-
-- **Modularity** — break the system into independent units that can be built, understood, changed, and tested on their own.
-- **Interface standardization** — components communicate through stable, well-defined contracts: `AgentProtocol`, `AttackVector`, `RunResult`.
-- **Maintainability** — changes to one agent archetype should not require rewriting the runner or the judge.
-- **Reusability** — the runner and judge can be used with any `AgentProtocol` implementor without modification.
-
-### Derived working rules
-
-- **One thing, well** — runner runs, judge judges, guard guards, dashboard displays.
-- **Plain text where possible** — attack corpus is YAML; results can be serialized to JSON.
-- **Fail fast, crash loudly** — malformed corpus entries raise at load time, not mid-run.
-- **Test in isolation** — runner, judge, and each agent archetype are testable independently.
+This project follows **Unix philosophy** — composability over monolithic design (full
+statement in [`AGENTS.md`](../../AGENTS.md)). The load-bearing seam here is the set of
+standardized contracts — `AgentProtocol`, `AttackVector`, `RunResult`, `BackendProtocol`
+— across which the runner, judge, agent archetypes, and backends compose. Because the
+runner depends only on those protocols (never on concrete archetype or backend classes),
+any agent archetype or LLM backend can be swapped in without touching the harness, and
+each part — runner, judge, each archetype — is testable in isolation.
 
 ## Constraints and non-goals
 
