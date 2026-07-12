@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 
 from src.agents.echo_agent import EchoAgent
 from src.corpus import load_corpus
-from src.runner import ArmorEvalRunner
-from src.types import AttackVector
+from src.runner import ArmorEvalRunner, _consistency
+from src.types import AgentTrace, AttackOutcome, AttackVector, RunResult
 
 
 def _attack(id: str) -> AttackVector:
@@ -82,7 +82,37 @@ def test_verdict_armor_adds_protection():
     assert c["armored_blocked"] == 5
 
 
-# TC-020-06
+def _run_result(attack_id: str, *, armor_active: bool, blocked: bool) -> RunResult:
+    return RunResult(
+        attack_id=attack_id,
+        attack_name=attack_id,
+        outcome=AttackOutcome.BLOCKED if blocked else AttackOutcome.SUCCESS,
+        trace=AgentTrace(input_received="x", final_output="y", latency_ms=1.0, timestamp="t"),
+        armor_active=armor_active,
+        verdict_reasoning="synthetic",
+        agent_type="rag",
+    )
+
+
+# TC-020-10 (additional coverage: the fourth verdict from the acceptance-criteria
+# table, "all four verdicts reachable via test". Non-determinism dominates and
+# neither rate clears the model_level/armor_adds_protection/missed_both thresholds)
+def test_verdict_flaky():
+    # 3/5 bare blocked (0.6), 3/5 armored blocked (0.6): neither >= 0.8 nor < 0.5
+    # on both sides, so none of the other three verdicts apply.
+    results = (
+        [_run_result("f1", armor_active=False, blocked=b) for b in [True, True, True, False, False]]
+        + [_run_result("f1", armor_active=True, blocked=b) for b in [True, True, True, False, False]]
+    )
+    c = _consistency(results)["f1"]
+    assert c["bare_blocked"] == 3
+    assert c["armored_blocked"] == 3
+    assert c["verdict"] == "flaky"
+
+
+# TC-020-08 (additional coverage beyond the spec's TC-020-06/07, which cover
+# scripts/export_analysis.py and scripts/demo_report.py: see
+# tests/test_export_analysis.py and tests/test_demo.py)
 def test_block_rates_in_consistency_dict():
     runner = ArmorEvalRunner(EchoAgent)
     summary, _ = runner.run_benchmark([_attack("a1")], iterations=4)
@@ -93,7 +123,7 @@ def test_block_rates_in_consistency_dict():
     assert c["armored_block_rate"] == c["armored_blocked"] / c["armored_total"]
 
 
-# TC-020-07
+# TC-020-09 (additional coverage beyond the spec's seven test cases)
 def test_all_attacks_have_consistency_entry():
     attacks = load_corpus("attacks/corpus.yaml")
     runner = ArmorEvalRunner(EchoAgent)
